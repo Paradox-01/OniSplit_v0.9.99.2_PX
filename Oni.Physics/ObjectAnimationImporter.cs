@@ -42,7 +42,7 @@ namespace Oni.Physics
 					ObjectDatWriter.WriteAnimation(animation, this);
 				}
 			}
-			Write(outputDirPath);
+			Write(outputDirPath, filePath);
 		}
 	}
 }

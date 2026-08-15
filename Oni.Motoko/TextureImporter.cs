@@ -138,7 +138,7 @@ namespace Oni.Motoko
 			}
 			BeginImport();
 			TextureDatWriter.Write(texture, this);
-			Write(outputDirPath);
+			Write(outputDirPath, filePath);
 		}
 
 		private void LoadImage(Texture texture, string filePath)

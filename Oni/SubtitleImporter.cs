@@ -16,7 +16,7 @@ namespace Oni
 			string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
 			BeginImport();
 			WriteSUBT(fileNameWithoutExtension, subtitles.ToArray());
-			Write(outputDirPath);
+			Write(outputDirPath, filePath);
 		}
 
 		private void ReadTextFile(string filePath)

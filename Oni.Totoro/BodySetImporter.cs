@@ -23,7 +23,7 @@ namespace Oni.Totoro
 			ImporterDescriptor trbs = CreateInstance(TemplateTag.TRBS, text);
 			ImporterDescriptor trcm = bodyImporter.Import(filePath, base.ImporterFile);
 			WriteTRBS(trbs, trcm);
-			Write(outputDirPath);
+			Write(outputDirPath, filePath);
 		}
 
 		private void WriteTRBS(ImporterDescriptor trbs, ImporterDescriptor trcm)

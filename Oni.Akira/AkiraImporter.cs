@@ -33,7 +33,7 @@ namespace Oni.Akira
 			PolygonMesh mesh = AkiraDaeReader.Read(files);
 			BeginImport();
 			AkiraDatWriter.Write(mesh, this, name, debug);
-			Write(outputDirPath);
+			Write(outputDirPath, files[0]);
 		}
 	}
 }

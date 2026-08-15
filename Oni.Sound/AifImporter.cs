@@ -34,7 +34,7 @@ namespace Oni.Sound
 			}
 			BeginImport();
 			WriteSNDD(Path.GetFileNameWithoutExtension(filePath), aifFile);
-			Write(outputDirPath);
+			Write(outputDirPath, filePath);
 		}
 
 		private void WriteSNDD(string name, AifFile aif)

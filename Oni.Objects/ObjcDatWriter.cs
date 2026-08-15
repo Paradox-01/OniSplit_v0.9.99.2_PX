@@ -85,29 +85,29 @@ namespace Oni.Objects
 			}
 		}
 
-		public static void Write(List<ObjectBase> objects, string outputDirPath)
+		public static void Write(List<ObjectBase> objects, string outputDirPath, string inputFilePath)
 		{
 			System.Console.Error.WriteLine("Writing {0} objects...", objects.Count);
-			Write(TypeTag.CHAR, "Character", objects, outputDirPath);
-			Write(TypeTag.CONS, "Console", objects, outputDirPath);
-			Write(TypeTag.DOOR, "Door", objects, outputDirPath);
-			Write(TypeTag.FLAG, "Flag", objects, outputDirPath);
-			Write(TypeTag.FURN, "Furniture", objects, outputDirPath);
-			Write(TypeTag.NEUT, "Neutral", objects, outputDirPath);
-			Write(TypeTag.PART, "Particle", objects, outputDirPath);
-			Write(TypeTag.PATR, "Patrol Path", objects, outputDirPath);
-			Write(TypeTag.PWRU, "PowerUp", objects, outputDirPath);
-			Write(TypeTag.SNDG, "Sound", objects, outputDirPath);
-			Write(TypeTag.TRIG, "Trigger", objects, outputDirPath);
-			Write(TypeTag.TRGV, "Trigger Volume", objects, outputDirPath);
-			Write(TypeTag.TURR, "Turret", objects, outputDirPath);
-			Write(TypeTag.WEAP, "Weapon", objects, outputDirPath);
+			Write(TypeTag.CHAR, "Character", objects, outputDirPath, inputFilePath);
+			Write(TypeTag.CONS, "Console", objects, outputDirPath, inputFilePath);
+			Write(TypeTag.DOOR, "Door", objects, outputDirPath, inputFilePath);
+			Write(TypeTag.FLAG, "Flag", objects, outputDirPath, inputFilePath);
+			Write(TypeTag.FURN, "Furniture", objects, outputDirPath, inputFilePath);
+			Write(TypeTag.NEUT, "Neutral", objects, outputDirPath, inputFilePath);
+			Write(TypeTag.PART, "Particle", objects, outputDirPath, inputFilePath);
+			Write(TypeTag.PATR, "Patrol Path", objects, outputDirPath, inputFilePath);
+			Write(TypeTag.PWRU, "PowerUp", objects, outputDirPath, inputFilePath);
+			Write(TypeTag.SNDG, "Sound", objects, outputDirPath, inputFilePath);
+			Write(TypeTag.TRIG, "Trigger", objects, outputDirPath, inputFilePath);
+			Write(TypeTag.TRGV, "Trigger Volume", objects, outputDirPath, inputFilePath);
+			Write(TypeTag.TURR, "Turret", objects, outputDirPath, inputFilePath);
+			Write(TypeTag.WEAP, "Weapon", objects, outputDirPath, inputFilePath);
 		}
 
-		private static void Write(TypeTag tag, string name, List<ObjectBase> objects, string outputDirPath)
+		private static void Write(TypeTag tag, string name, List<ObjectBase> objects, string outputDirPath, string inputFilePath)
 		{
 			ObjcDatWriter objcDatWriter = new ObjcDatWriter(tag, name, objects);
-			objcDatWriter.Import(null, outputDirPath);
+			objcDatWriter.Import(inputFilePath, outputDirPath);
 		}
 
 		public override void Import(string filePath, string outputDirPath)
@@ -121,7 +121,7 @@ namespace Oni.Objects
 				binaryWriter.Write(value2);
 				binaryWriter.Write(value);
 			}
-			Write(outputDirPath);
+			Write(outputDirPath, filePath);
 		}
 
 		private int WriteCollection(BinaryWriter raw)

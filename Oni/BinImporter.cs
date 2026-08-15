@@ -26,7 +26,7 @@ namespace Oni
 				}
 				base.RawWriter.Write(num);
 				base.RawWriter.Write(binaryReader.ReadBytes(binaryReader.Length - 4));
-				Write(outputDirPath);
+				Write(outputDirPath, filePath);
 			}
 		}
 	}

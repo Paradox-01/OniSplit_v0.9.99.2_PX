@@ -224,7 +224,7 @@ namespace Oni
 			return WriteRawPart(Encoding.UTF8.GetBytes(text));
 		}
 
-		public void Write(string outputDirPath)
+		public void Write(string outputDirPath, string inputFilePath = null)
 		{
 			string path = Path.Combine(outputDirPath, Importer.EncodeFileName(descriptors[0].Name) + ".oni");
 			Directory.CreateDirectory(outputDirPath);
@@ -260,7 +260,7 @@ namespace Oni
 					fileHeader.Write(binaryWriter);
 					foreach (ImporterFileDescriptor descriptor in descriptors)
 					{
-						WriteDescriptor(binaryWriter, descriptor);
+						WriteDescriptor(binaryWriter, descriptor, inputFilePath);
 					}
 					binaryWriter.Position = fileHeader.NameTableOffset;
 					foreach (ImporterFileDescriptor descriptor2 in descriptors)
@@ -287,7 +287,7 @@ namespace Oni
 			}
 		}
 
-		private void WriteDescriptor(BinaryWriter writer, ImporterFileDescriptor descriptor)
+		private void WriteDescriptor(BinaryWriter writer, ImporterFileDescriptor descriptor, string inputFilePath)
 		{
 			InstanceDescriptorFlags instanceDescriptorFlags = InstanceDescriptorFlags.None;
 			if (descriptor.Name == null)
@@ -300,7 +300,11 @@ namespace Oni
 			}
 			if (descriptor.Name == null && descriptor.Data == null)
 			{
-				throw new InvalidOperationException("Link descriptors must have names");
+				if (string.IsNullOrEmpty(inputFilePath))
+				{
+					throw new InvalidOperationException("Link descriptors must have names (input source unavailable)");
+				}
+				throw new InvalidOperationException(string.Format("Link descriptors must have names in {0}", Path.GetFullPath(inputFilePath)));
 			}
 			writer.Write((int)descriptor.Tag);
 			writer.Write(descriptor.DataOffset);

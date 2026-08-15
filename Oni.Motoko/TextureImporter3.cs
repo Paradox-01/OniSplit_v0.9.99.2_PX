@@ -357,7 +357,7 @@ namespace Oni.Motoko
 				{
 					TexImporter texImporter = new TexImporter(this, options);
 					texImporter.Import();
-					texImporter.Write(outputDirPath);
+					texImporter.Write(outputDirPath, options.Images[0]);
 				}
 			});
 			Console.WriteLine("Imported {0} textures", textures.Count);

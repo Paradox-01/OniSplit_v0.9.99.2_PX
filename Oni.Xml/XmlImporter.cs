@@ -393,7 +393,7 @@ namespace Oni.Xml
 					}
 				}
 			}
-			Write(outputDirPath);
+			Write(outputDirPath, filePath);
 		}
 
 		public override void BeginImport()

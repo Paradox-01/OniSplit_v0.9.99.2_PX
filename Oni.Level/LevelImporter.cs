@@ -207,6 +207,8 @@ namespace Oni.Level
 
 		private string outputDirPath;
 
+		private string inputFilePath;
+
 		private LevelDatWriter.DatLevel level;
 
 		private string sharedPath;
@@ -272,7 +274,7 @@ namespace Oni.Level
 				{
 					DatWriter datWriter = new DatWriter();
 					ObjectDatWriter.WriteAnimation(animation, datWriter);
-					datWriter.Write(outputDirPath);
+					datWriter.Write(outputDirPath, text);
 				}
 			}
 		}
@@ -337,14 +339,14 @@ namespace Oni.Level
 					Film film = ReadBinFilm(text);
 					DatWriter datWriter = new DatWriter();
 					WriteDatFilm(datWriter, film);
-					datWriter.Write(outputDirPath);
+					datWriter.Write(outputDirPath, text);
 				}
 				else if (string.Equals(extension, ".xml", StringComparison.OrdinalIgnoreCase))
 				{
 					Film film2 = ReadXmlFilm(text);
 					DatWriter datWriter2 = new DatWriter();
 					WriteDatFilm(datWriter2, film2);
-					datWriter2.Write(outputDirPath);
+					datWriter2.Write(outputDirPath, text);
 				}
 				else
 				{
@@ -613,7 +615,7 @@ namespace Oni.Level
 				{
 					DatWriter datWriter = new DatWriter();
 					GeometryDatWriter.Write(item2.Geometry, datWriter.ImporterFile);
-					datWriter.Write(outputDirPath);
+					datWriter.Write(outputDirPath, filePath);
 				}
 				objectSetup.Position = Vector3.Zero;
 				objectSetup.Orientation = Quaternion.Identity;
@@ -639,7 +641,7 @@ namespace Oni.Level
 					DatWriter datWriter2 = new DatWriter();
 					datWriter2.BeginImport();
 					ObjectDatWriter.WriteAnimation(objectAnimation, datWriter2);
-					datWriter2.Write(outputDirPath);
+					datWriter2.Write(outputDirPath, filePath);
 				}
 				if (objectSetup.Animation == null && item.Animations.Length != 0)
 				{
@@ -671,7 +673,7 @@ namespace Oni.Level
 			info.WriteLine("Writing environment...");
 			DatWriter datWriter = new DatWriter();
 			AkiraDatWriter.Write(model, datWriter, level.name, debug);
-			datWriter.Write(outputDirPath);
+			datWriter.Write(outputDirPath, inputFilePath);
 		}
 
 		private void ImportGunkNode(int gunkId, Matrix transform, GunkFlags flags, Oni.Motoko.Geometry geometry)
@@ -1105,7 +1107,7 @@ namespace Oni.Level
 
 		private void WriteObjects()
 		{
-			ObjcDatWriter.Write(objects, outputDirPath);
+			ObjcDatWriter.Write(objects, outputDirPath, inputFilePath);
 		}
 
 		private IEnumerable<Corpse> ReadCorpses(XmlReader xml, string basePath)
@@ -1388,6 +1390,7 @@ namespace Oni.Level
 			for (int i = 0; i < list2.Count; i++)
 			{
 				ObjectNode objectNode = list2[i];
+				string sourceFilePath = objectNode.SourceFilePath ?? inputFilePath;
 				ObjectSetup objectSetup = new ObjectSetup
 				{
 					Name = objectNode.Name,
@@ -1405,7 +1408,7 @@ namespace Oni.Level
 				{
 					DatWriter datWriter = new DatWriter();
 					GeometryDatWriter.Write(item.Geometry, datWriter.ImporterFile);
-					datWriter.Write(outputDirPath);
+					datWriter.Write(outputDirPath, sourceFilePath);
 				}
 				objectSetup.Position = position;
 				objectSetup.Orientation = orientation;
@@ -1434,7 +1437,7 @@ namespace Oni.Level
 					}
 					DatWriter datWriter2 = new DatWriter();
 					ObjectDatWriter.WriteAnimation(objectAnimation, datWriter2);
-					datWriter2.Write(outputDirPath);
+					datWriter2.Write(outputDirPath, sourceFilePath);
 				}
 				if (objectSetup.Animation == null && objectNode.Animations.Length != 0)
 				{
@@ -1458,7 +1461,8 @@ namespace Oni.Level
 			{
 				attribute = xml.GetAttribute("Url");
 			}
-			Scene scene = LoadScene(Path.Combine(basePath, attribute));
+			string filePath = Path.GetFullPath(Path.Combine(basePath, attribute));
+			Scene scene = LoadScene(filePath);
 			List<ObjectAnimationClip> list = new List<ObjectAnimationClip>();
 			if (!xml.SkipEmpty())
 			{
@@ -1478,6 +1482,10 @@ namespace Oni.Level
 			}
 			ObjectDaeImporter objectDaeImporter = new ObjectDaeImporter(textureImporter, null);
 			objectDaeImporter.Import(scene);
+			foreach (ObjectNode node in objectDaeImporter.Nodes)
+			{
+				node.SourceFilePath = filePath;
+			}
 			return objectDaeImporter.Nodes;
 		}
 
@@ -1543,8 +1551,9 @@ namespace Oni.Level
 		public override void Import(string filePath, string outputDirPath)
 		{
 			this.outputDirPath = outputDirPath;
+			inputFilePath = Path.GetFullPath(filePath);
 			textureImporter = new TextureImporter3(outputDirPath);
-			Read(filePath);
+			Read(inputFilePath);
 			WriteLevel();
 			WriteObjects();
 		}
@@ -1600,7 +1609,7 @@ namespace Oni.Level
 		{
 			BeginImport();
 			LevelDatWriter.Write(this, level);
-			Write(outputDirPath);
+			Write(outputDirPath, inputFilePath);
 			textureImporter.Write();
 		}
 

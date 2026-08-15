@@ -117,11 +117,11 @@ namespace Oni.Motoko
 				{
 					textureFilePath = ReadMaterial(item.Materials[0].Target);
 				}
-				WriteM3GM(geometry, textureFilePath, outputDirPath);
+				WriteM3GM(geometry, textureFilePath, outputDirPath, filePath);
 			}
 		}
 
-		private void WriteM3GM(Geometry geometry, string textureFilePath, string outputDirPath)
+		private void WriteM3GM(Geometry geometry, string textureFilePath, string outputDirPath, string inputFilePath)
 		{
 			geometry.Name = Importer.MakeInstanceName(TemplateTag.M3GM, geometry.Name);
 			if (string.IsNullOrEmpty(textureFilePath))
@@ -134,7 +134,7 @@ namespace Oni.Motoko
 			}
 			BeginImport();
 			GeometryDatWriter.Write(geometry, base.ImporterFile);
-			Write(outputDirPath);
+			Write(outputDirPath, inputFilePath);
 		}
 
 		private string ReadMaterial(Material material)

@@ -8,6 +8,8 @@ namespace Oni.Physics
 
 		public string FileName;
 
+		public string SourceFilePath;
+
 		public ObjectSetupFlags Flags;
 
 		public int ScriptId;

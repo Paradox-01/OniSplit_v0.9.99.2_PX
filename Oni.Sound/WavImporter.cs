@@ -29,7 +29,7 @@ namespace Oni.Sound
 			}
 			BeginImport();
 			WriteSNDD(Path.GetFileNameWithoutExtension(filePath), wavFile);
-			Write(outputDirPath);
+			Write(outputDirPath, filePath);
 		}
 
 		private void WriteSNDD(string name, WavFile wav)

@@ -88,6 +88,11 @@ namespace Oni
 			file.Write(outputDirPath);
 		}
 
+		public void Write(string outputDirPath, string inputFilePath)
+		{
+			file.Write(outputDirPath, inputFilePath);
+		}
+
 		protected static string MakeInstanceName(TemplateTag tag, string name)
 		{
 			string text = tag.ToString();
