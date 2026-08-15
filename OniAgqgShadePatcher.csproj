@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+	<AssemblyName>OniAgqgShadePatcher</AssemblyName>
+	<GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+	<OutputType>Exe</OutputType>
+	<TargetFramework>net20</TargetFramework>
+	<LangVersion>13.0</LangVersion>
+	<OutputPath>bin\$(Configuration)\</OutputPath>
+	<EnableDefaultCompileItems>False</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+	<Compile Remove="OniAgqgObjExporter\**\*.cs" />
+	<Compile Include="OniAgqgShadePatcher\Program.cs" />
+	<PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net20" Version="1.0.3" PrivateAssets="All" />
+  </ItemGroup>
+</Project>

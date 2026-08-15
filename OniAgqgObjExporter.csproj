@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+	<AssemblyName>OniAgqgObjExporter</AssemblyName>
+	<GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+	<OutputType>Exe</OutputType>
+	<TargetFramework>net20</TargetFramework>
+	<LangVersion>13.0</LangVersion>
+	<OutputPath>bin\$(Configuration)\</OutputPath>
+	<EnableDefaultCompileItems>False</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+	<Compile Remove="OniAgqgShadePatcher\**\*.cs" />
+	<Compile Include="OniAgqgObjExporter\Program.cs" />
+	<Compile Include="OniAgqgShadePatcher\Program.cs" />
+	<None Include="OniAgqgShadePatcher.csproj" />
+	<PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net20" Version="1.0.3" PrivateAssets="All" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="AE\GameDataFolder\level 3 lab\out\" />
+    <Folder Include="AE\Tools\" />
+    <Folder Include="out\" />
+  </ItemGroup>
+</Project>

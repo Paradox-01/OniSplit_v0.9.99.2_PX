@@ -1,0 +1,23 @@
+<Project>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'OniSplit'">
+	<Compile Remove="obj\**\*.cs" />
+	<Compile Remove="OniAgqgObjExporter\**\*.cs" />
+	<Compile Remove="OniAgqgShadePatcher\**\*.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'OniAgqgObjExporter'">
+	<Compile Remove="OniAgqgShadePatcher\**\*.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'OniAgqgShadePatcher'">
+	<Compile Remove="OniAgqgObjExporter\**\*.cs" />
+  </ItemGroup>
+  <Target Name="BuildHelperTools" BeforeTargets="Build" Condition="'$(MSBuildProjectName)' == 'OniSplit'">
+    <MSBuild Projects="OniAgqgObjExporter.csproj;OniAgqgShadePatcher.csproj;OniOnlvAisaLinkPatcher.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration)"
+             BuildInParallel="true" />
+  </Target>
+  <Target Name="DeployDebugExecutables" AfterTargets="Build"
+          Condition="'$(MSBuildProjectName)' == 'OniSplit' And '$(Configuration)' == 'Debug'">
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)CopyDebugNet40Executables.cmd&quot;" />
+  </Target>
+</Project>

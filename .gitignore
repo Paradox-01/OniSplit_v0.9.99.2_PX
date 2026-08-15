@@ -1,4 +1,7 @@
+settings.xml
 StartFolder.xml
+local wiki pages
 .vs
 obj
 bin
+CopyDebugNet40Executables.cmd

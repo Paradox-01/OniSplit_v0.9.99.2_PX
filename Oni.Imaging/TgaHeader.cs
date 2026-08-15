@@ -98,7 +98,7 @@ namespace Oni.Imaging
 			}
 			if (tgaHeader.Width == 0 || tgaHeader.Height == 0)
 			{
-				throw new InvalidDataException("Invalid TGA file");
+				throw new InvalidDataException($"Invalid TGA file {Path.GetFileName(reader.Name)}");
 			}
 			if (tgaHeader.ImageType == TgaImageType.TrueColor && tgaHeader.pixelDepth != 16 && tgaHeader.pixelDepth != 24 && tgaHeader.pixelDepth != 32)
 			{
