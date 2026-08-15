@@ -1492,6 +1492,11 @@ namespace Oni.Level
 		private void ReadSky(XmlReader xml, string basePath)
 		{
 			level.skyName = xml.ReadElementContentAsString("Sky", "");
+			if (string.IsNullOrEmpty(level.skyName))
+			{
+				error.WriteLine("Warning: The <Sky> field in {0} is empty; using ONSKnight.", inputFilePath);
+				level.skyName = "ONSKnight";
+			}
 		}
 
 		private void ReadTextures(XmlReader xml, string basePath)
