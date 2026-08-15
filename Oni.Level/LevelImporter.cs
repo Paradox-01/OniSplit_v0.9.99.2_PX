@@ -756,6 +756,10 @@ namespace Oni.Level
 			{
 				if (File.Exists(item.ImageFilePath))
 				{
+					foreach (string meshName in model.Polygons.Where((Polygon p) => p.Material == item).Select((Polygon p) => p.ObjectName).Distinct())
+					{
+						TgaMeshUsage.Register(item.ImageFilePath, meshName);
+					}
 					TextureImporterOptions textureImporterOptions = textureImporter.AddMaterial(item);
 					if (textureImporterOptions != null)
 					{

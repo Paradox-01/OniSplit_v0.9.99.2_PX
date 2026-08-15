@@ -247,7 +247,7 @@ namespace Oni.Motoko
 			this.outputDirPath = outputDirPath;
 		}
 
-		public string AddMaterial(Oni.Dae.Material material)
+		public string AddMaterial(Oni.Dae.Material material, string meshName)
 		{
 			if (material == null || material.Effect == null)
 			{
@@ -268,6 +268,7 @@ namespace Oni.Motoko
 			{
 				return null;
 			}
+			TgaMeshUsage.Register(fullPath, meshName);
 			TextureImporterOptions options = GetOptions(Path.GetFileNameWithoutExtension(fullPath), fullPath);
 			return options.Name;
 		}

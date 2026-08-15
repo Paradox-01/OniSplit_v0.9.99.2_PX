@@ -110,6 +110,7 @@ namespace Oni.Akira
 			{
 				return null;
 			}
+			TgaMeshUsage.Register(floor.Material.ImageFilePath, floor.ObjectName);
 			Surface image = TgaReader.Read(floor.Material.ImageFilePath);
 			return RoomGrid.FromImage(image);
 		}

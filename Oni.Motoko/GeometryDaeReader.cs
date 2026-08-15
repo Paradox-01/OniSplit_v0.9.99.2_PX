@@ -70,7 +70,7 @@ namespace Oni.Motoko
 				geometry.Name = node.Name;
 				if (textureImporter != null && geometryInstance.Materials.Count > 0)
 				{
-					geometry.TextureName = textureImporter.AddMaterial(geometryInstance.Materials[0].Target);
+					geometry.TextureName = textureImporter.AddMaterial(geometryInstance.Materials[0].Target, geometry.Name);
 				}
 				yield return geometry;
 			}
