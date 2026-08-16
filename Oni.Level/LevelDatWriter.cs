@@ -14,6 +14,8 @@ namespace Oni.Level
 
 			public string skyName;
 
+			public string aisaName;
+
 			public readonly List<ObjectSetup> physics = new List<ObjectSetup>();
 
 			public readonly List<ObjectParticle> particles = new List<ObjectParticle>();
@@ -44,22 +46,26 @@ namespace Oni.Level
 		private void WriteONLV()
 		{
 			ImporterDescriptor importerDescriptor = importer.CreateInstance(TemplateTag.ONLV, level.name);
+			ImporterDescriptor descriptor = importer.CreateInstance(TemplateTag.AKEV, level.name);
 			ImporterDescriptor importerDescriptor2 = importer.CreateInstance(TemplateTag.OBOA);
-			ImporterDescriptor importerDescriptor3 = importer.CreateInstance(TemplateTag.AISA);
+			ImporterDescriptor descriptor2 = importer.CreateInstance(TemplateTag.ONSK, level.skyName);
+			ImporterDescriptor importerDescriptor3 = null;
+			if (!string.IsNullOrEmpty(level.aisaName))
+			{
+				importerDescriptor3 = importer.CreateInstance(TemplateTag.AISA, level.aisaName);
+			}
 			ImporterDescriptor importerDescriptor4 = importer.CreateInstance(TemplateTag.ONOA);
 			ImporterDescriptor importerDescriptor5 = importer.CreateInstance(TemplateTag.ENVP);
 			ImporterDescriptor importerDescriptor6 = importer.CreateInstance(TemplateTag.CRSA);
-			ImporterDescriptor descriptor = importer.CreateInstance(TemplateTag.ONSK, level.skyName);
-			ImporterDescriptor descriptor2 = importer.CreateInstance(TemplateTag.AKEV, level.name);
 			using (BinaryWriter binaryWriter = importerDescriptor.OpenWrite())
 			{
 				binaryWriter.Write(level.name, 64);
-				binaryWriter.Write(descriptor2);
+				binaryWriter.Write(descriptor);
 				binaryWriter.Write(importerDescriptor2);
 				binaryWriter.Write(0);
 				binaryWriter.Write(0);
 				binaryWriter.Write(0);
-				binaryWriter.Write(descriptor);
+				binaryWriter.Write(descriptor2);
 				binaryWriter.Write(0f);
 				binaryWriter.Write(importerDescriptor3);
 				binaryWriter.Write(0);
@@ -71,7 +77,6 @@ namespace Oni.Level
 				binaryWriter.Write(importerDescriptor6);
 			}
 			WriteOBOA(importerDescriptor2);
-			WriteAISA(importerDescriptor3);
 			WriteONOA(importerDescriptor4);
 			WriteENVP(importerDescriptor5, level.particles);
 			WriteCRSA(importerDescriptor6, level.corpses);

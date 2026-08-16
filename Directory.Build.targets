@@ -11,7 +11,7 @@
 	<Compile Remove="OniAgqgObjExporter\**\*.cs" />
   </ItemGroup>
   <Target Name="BuildHelperTools" BeforeTargets="Build" Condition="'$(MSBuildProjectName)' == 'OniSplit'">
-    <MSBuild Projects="OniAgqgObjExporter.csproj;OniAgqgShadePatcher.csproj;OniOnlvAisaLinkPatcher.csproj"
+    <MSBuild Projects="OniAgqgObjExporter.csproj;OniAgqgShadePatcher.csproj"
              Targets="Build"
              Properties="Configuration=$(Configuration)"
              BuildInParallel="true" />
