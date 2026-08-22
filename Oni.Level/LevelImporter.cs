@@ -1037,19 +1037,20 @@ namespace Oni.Level
 			}
 			for (int j = 0; j < num5; j++)
 			{
+				Matrix sideTransform = Matrix.CreateTranslation((j == 0) ? num4 : (0f - num4), 0f, 0f) * transform;
+				bool isMirroredSide = ((door.Flags & DoorFlags.Mirror) != 0) == (j == 0);
 				Matrix matrix2;
 				Matrix transform2;
-				if (j == 0)
+				if (isMirroredSide)
 				{
-					Matrix matrix = Matrix.CreateTranslation(num4, 0f, 0f) * transform;
-					matrix2 = m * matrix;
-					transform2 = matrix2;
+					Matrix mirrorRotation = Matrix.CreateRotationY(3.141593f);
+					matrix2 = mirrorRotation * m * sideTransform;
+					transform2 = m * mirrorRotation * sideTransform;
 				}
 				else
 				{
-					Matrix matrix3 = Matrix.CreateTranslation(0f - num4, 0f, 0f) * transform;
-					matrix2 = Matrix.CreateRotationY(3.141593f) * m * matrix3;
-					transform2 = m * Matrix.CreateRotationY(3.141593f) * matrix3;
+					matrix2 = m * sideTransform;
+					transform2 = matrix2;
 				}
 				int num6 = door.ScriptId | (j << 12);
 				Oni.Motoko.Geometry[] array = ImportDoorGeometry(door, j);
