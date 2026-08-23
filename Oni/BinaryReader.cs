@@ -22,6 +22,8 @@ namespace Oni
 
 		private InstanceFile instanceFile;
 
+		private InstanceDescriptor sourceDescriptor;
+
 		public string Name
 		{
 			get
@@ -74,10 +76,11 @@ namespace Oni
 			this.bigEndian = bigEndian;
 		}
 
-		public BinaryReader(string filePath, InstanceFile instanceFile)
+		public BinaryReader(string filePath, InstanceFile instanceFile, InstanceDescriptor sourceDescriptor)
 			: this(filePath)
 		{
 			this.instanceFile = instanceFile;
+			this.sourceDescriptor = sourceDescriptor;
 		}
 
 		public void Dispose()
@@ -400,7 +403,7 @@ namespace Oni
 
 		public InstanceDescriptor ReadInstance()
 		{
-			return instanceFile.ResolveLink(ReadInt32());
+			return instanceFile.ResolveLink(ReadInt32(), sourceDescriptor);
 		}
 
 		public InstanceDescriptor[] ReadInstanceArray(int length)

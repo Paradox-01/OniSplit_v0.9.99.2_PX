@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Oni.Collections;
 using Oni.Dae;
 
@@ -79,6 +80,18 @@ namespace Oni.Akira
 			}
 		}
 
+		private static bool PolygonIntersectsRoom(Room room, Polygon polygon)
+		{
+			foreach (Vector3 point in polygon.Points)
+			{
+				if (room.Contains(point, 10f))
+				{
+					return true;
+				}
+			}
+			return room.Intersect(polygon.BoundingBox);
+		}
+
 		private void BuildGrid(Room room)
 		{
 			Polygon floorPolygon = room.FloorPolygon;
@@ -103,20 +116,53 @@ namespace Oni.Akira
 			{
 				set2.UnionWith(item2.Polygons);
 			}
-			foreach (Polygon item3 in set)
+			if (room.IsStairs)
 			{
-				if (item3.Plane.Normal.Y > 0.5f)
+				List<Polygon> list = new List<Polygon>();
+				foreach (RoomAdjacency ajacency in room.Ajacencies)
 				{
-					roomGridRasterizer.DrawFloor(item3.Points);
+					if (!list.Contains(ajacency.Ghost))
+					{
+						list.Add(ajacency.Ghost);
+					}
+				}
+				list.Sort((Polygon x, Polygon y) => x.BoundingBox.Min.Y.CompareTo(y.BoundingBox.Min.Y));
+				if (list.Count >= 2)
+				{
+					roomGridRasterizer.DrawStairCorridor(list[0].Points, list[list.Count - 1].Points);
+				}
+				else
+				{
+					List<string> ghostDescriptions = new List<string>(list.Count);
+					foreach (Polygon ghost in list)
+					{
+						ghostDescriptions.Add(string.Format("'{0}' at {1}", ghost.ObjectName ?? "<unnamed>", FormatVector((ghost.BoundingBox.Min + ghost.BoundingBox.Max) / 2f)));
+					}
+					Console.Error.WriteLine("BNV Builder: Stair room '{0}' (node '{1}') in '{2}' has {3} stair ghosts [{4}]; world bounds {5} to {6}; using its floor polygons", floorPolygon.ObjectName ?? "<unnamed>", floorPolygon.SourceNodeId ?? "<unknown>", floorPolygon.FileName ?? "<unknown>", list.Count, string.Join(", ", ghostDescriptions.ToArray()), FormatVector(room.BoundingBox.Min), FormatVector(room.BoundingBox.Max));
+					foreach (Polygon floor in room.FloorPolygons)
+					{
+						roomGridRasterizer.DrawFloor(floor.Points);
+					}
 				}
 			}
-			if (room.FloorPlane.Normal.Y >= 0.999f)
+			else
 			{
+				foreach (Polygon item3 in set)
+				{
+					if (item3.Plane.Normal.Y > 0.5f && PolygonIntersectsRoom(room, item3))
+					{
+						roomGridRasterizer.DrawFloor(item3.Points);
+					}
+				}
 				float y = floorPolygon.BoundingBox.Max.Y;
 				Plane plane = new Plane(floorPolygon.Plane.Normal, floorPolygon.Plane.D - 4f);
 				Plane plane2 = new Plane(-floorPolygon.Plane.Normal, 0f - (floorPolygon.Plane.D - 20f));
 				foreach (Polygon item4 in set)
 				{
+					if (!PolygonIntersectsRoom(room, item4))
+					{
+						continue;
+					}
 					if ((item4.Flags & (GunkFlags.Stairs | GunkFlags.NoCharacterCollision | GunkFlags.Impassable)) == 0)
 					{
 						BoundingBox boundingBox2 = item4.BoundingBox;
@@ -143,7 +189,7 @@ namespace Oni.Akira
 						{
 							roomGridRasterizer.DrawWall(points);
 						}
-						else
+						else if (Math.Abs(item4.Plane.Normal.Y) <= 0.5f || item4.BoundingBox.Min.Y - y >= 2f)
 						{
 							roomGridRasterizer.DrawImpassable(points);
 						}
@@ -151,15 +197,32 @@ namespace Oni.Akira
 				}
 				foreach (Polygon item5 in set2)
 				{
-					roomGridRasterizer.DrawDanger(item5.Points);
+					if (PolygonIntersectsRoom(room, item5))
+					{
+						roomGridRasterizer.DrawDanger(item5.Points);
+					}
 				}
-				roomGridRasterizer.AddBorders();
+				foreach (RoomAdjacency adjacency in room.Ajacencies)
+				{
+					if (adjacency.AdjacentRoom.IsStairs && (adjacency.Ghost.Flags & (GunkFlags.StairsUp | GunkFlags.StairsDown)) != GunkFlags.None)
+					{
+						BoundingBox stairBoundingBox = adjacency.AdjacentRoom.BoundingBox;
+						roomGridRasterizer.DrawStairOutlet(adjacency.Ghost.Points, (stairBoundingBox.Min + stairBoundingBox.Max) / 2f);
+					}
+				}
 			}
+			roomGridRasterizer.AddBorders();
 			room.Grid = roomGridRasterizer.GetGrid();
-			if (room.Grid.XTiles * room.Grid.ZTiles > 65536)
+			long tileCount = (long)room.Grid.XTiles * room.Grid.ZTiles;
+			if (tileCount > 65536)
 			{
-				Console.Error.WriteLine("Warning: pathfinding grid too large");
+				Console.Error.WriteLine("Warning: pathfinding grid for BNV '{0}' (node '{1}') in '{2}' is too large: {3} x {4} = {5} tiles; world bounds {6} to {7}", floorPolygon.ObjectName ?? "<unnamed>", floorPolygon.SourceNodeId ?? "<unknown>", floorPolygon.FileName ?? "<unknown>", room.Grid.XTiles, room.Grid.ZTiles, tileCount, FormatVector(room.BoundingBox.Min), FormatVector(room.BoundingBox.Max));
 			}
+		}
+
+		private static string FormatVector(Vector3 value)
+		{
+			return string.Format(CultureInfo.InvariantCulture, "({0:0.###}, {1:0.###}, {2:0.###})", value.X, value.Y, value.Z);
 		}
 	}
 }

@@ -32,6 +32,8 @@ namespace Oni.Akira
 
 		private string objectName;
 
+		private string sourceNodeId;
+
 		private PolygonEdge[] edges;
 
 		private BoundingBox bbox;
@@ -217,6 +219,18 @@ namespace Oni.Akira
 			set
 			{
 				objectName = value;
+			}
+		}
+
+		public string SourceNodeId
+		{
+			get
+			{
+				return sourceNodeId;
+			}
+			set
+			{
+				sourceNodeId = value;
 			}
 		}
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Oni.Imaging;
 
 namespace Oni.Akira
@@ -58,18 +59,19 @@ namespace Oni.Akira
 
 		private void BuildRooms()
 		{
-			foreach (Polygon floor in mesh.Floors)
+			foreach (IGrouping<string, Polygon> floorGroup in mesh.Floors.GroupBy((Polygon floor) => floor.FileName + "\0" + (floor.SourceNodeId ?? floor.ObjectName)))
 			{
-				mesh.Rooms.Add(CreateRoom(floor, 20f));
+				mesh.Rooms.Add(CreateRoom(floorGroup.ToList(), 20f));
 			}
 			ConnectRooms();
 			UpdateRoomsHeight();
 		}
 
-		private Room CreateRoom(Polygon floor, float height)
+		private Room CreateRoom(List<Polygon> floors, float height)
 		{
+			Polygon floor = floors[0];
 			Plane plane = floor.Plane;
-			BoundingBox boundingBox = floor.BoundingBox;
+			BoundingBox boundingBox = BoundingBox.CreateFromPoints(floors.SelectMany((Polygon polygon) => polygon.Points));
 			boundingBox.Max.Y += height * plane.Normal.Y;
 			Room room = new Room
 			{
@@ -77,13 +79,48 @@ namespace Oni.Akira
 				BoundingBox = boundingBox,
 				FloorPlane = floor.Plane,
 				Height = height * plane.Normal.Y,
-				BspTree = BuildBspTree(floor, height * plane.Normal.Y)
+				BspTree = BuildBspTree(floors, height * plane.Normal.Y)
 			};
+			room.FloorPolygons.AddRange(floors.Skip(1));
+			foreach (Polygon componentFloor in floors)
+			{
+				room.ComponentBspTrees.Add(BuildBspTree(componentFloor, height * plane.Normal.Y));
+			}
 			if (floor.Material != null)
 			{
 				room.Grid = CreateRoomGrid(floor);
 			}
 			return room;
+		}
+
+		private static RoomBspNode BuildBspTree(List<Polygon> floors, float height)
+		{
+			RoomBspNode roomBspNode = null;
+			foreach (Polygon floor in floors)
+			{
+				RoomBspNode roomBspNode2 = BuildBspTree(floor, height);
+				roomBspNode = ((roomBspNode == null) ? roomBspNode2 : UnionBspTrees(roomBspNode, roomBspNode2));
+			}
+			return roomBspNode;
+		}
+
+		private static RoomBspNode UnionBspTrees(RoomBspNode tree, RoomBspNode fallback)
+		{
+			return UnionBspTrees(tree, fallback, new Dictionary<RoomBspNode, RoomBspNode>());
+		}
+
+		private static RoomBspNode UnionBspTrees(RoomBspNode tree, RoomBspNode fallback, Dictionary<RoomBspNode, RoomBspNode> nodeMap)
+		{
+			RoomBspNode mappedNode;
+			if (nodeMap.TryGetValue(tree, out mappedNode))
+			{
+				return mappedNode;
+			}
+			RoomBspNode backChild = ((tree.BackChild == null) ? null : UnionBspTrees(tree.BackChild, fallback, nodeMap));
+			RoomBspNode frontChild = ((tree.FrontChild == null) ? fallback : UnionBspTrees(tree.FrontChild, fallback, nodeMap));
+			mappedNode = new RoomBspNode(tree.Plane, backChild, frontChild);
+			nodeMap.Add(tree, mappedNode);
+			return mappedNode;
 		}
 
 		private static RoomBspNode BuildBspTree(Polygon floor, float height)
@@ -129,33 +166,21 @@ namespace Oni.Akira
 				}
 				Vector3 vector = (array[0] + array[1]) / 2f;
 				Vector3 normal = ghost.Plane.Normal;
-				Vector3 vector2 = vector - normal + Vector3.Up * 2f;
-				Vector3 vector3 = vector + normal + Vector3.Up * 2f;
-				RoomPair roomPair = PairRooms(vector2, vector3);
+				Vector3 vector2 = vector + Vector3.Up * 2f;
+				Vector3 vector3 = vector2 - normal;
+				Vector3 vector4 = vector2 + normal;
+				RoomPair roomPair = PairRooms(vector2) ?? PairRooms(vector3, vector4);
 				if (roomPair == null)
 				{
-					Console.WriteLine("BNV Builder: Ghost '{0}' has no adjacencies at {1} and {2}, ignoring", ghost.ObjectName, vector2, vector3);
+					Console.WriteLine("BNV Builder: Ghost '{0}' has no adjacencies at {1} and {2}, ignoring", ghost.ObjectName, vector3, vector4);
 					continue;
 				}
 				if (roomPair.Room0.IsStairs || roomPair.Room1.IsStairs)
 				{
-					Room room = roomPair.Room0;
-					if (!room.IsStairs)
-					{
-						room = roomPair.Room1;
-					}
-					ghost.Flags &= ~GunkFlags.Ghost;
+					ghost.Flags &= ~(GunkFlags.Ghost | GunkFlags.StairsUp | GunkFlags.StairsDown);
 					if (ghost.Material != null)
 					{
 						ghost.Material.Flags &= ~GunkFlags.Ghost;
-					}
-					if (ghost.BoundingBox.Min.Y > room.FloorPolygon.BoundingBox.Max.Y - 1f)
-					{
-						ghost.Flags |= GunkFlags.StairsDown;
-					}
-					else
-					{
-						ghost.Flags |= GunkFlags.StairsUp;
 					}
 				}
 				else
@@ -165,29 +190,63 @@ namespace Oni.Akira
 				roomPair.Room1.Ajacencies.Add(new RoomAdjacency(roomPair.Room0, ghost));
 				roomPair.Room0.Ajacencies.Add(new RoomAdjacency(roomPair.Room1, ghost));
 			}
+			ClassifyStairGhosts();
+		}
+
+		private void ClassifyStairGhosts()
+		{
+			foreach (Room room in mesh.Rooms.Where((Room room) => room.IsStairs))
+			{
+				List<Polygon> list = new List<Polygon>();
+				foreach (RoomAdjacency ajacency in room.Ajacencies)
+				{
+					if (!list.Contains(ajacency.Ghost))
+					{
+						list.Add(ajacency.Ghost);
+					}
+				}
+				list.Sort((Polygon x, Polygon y) => x.BoundingBox.Min.Y.CompareTo(y.BoundingBox.Min.Y));
+				if (list.Count > 0)
+				{
+					list[0].Flags |= GunkFlags.StairsUp;
+				}
+				if (list.Count > 1)
+				{
+					list[list.Count - 1].Flags |= GunkFlags.StairsDown;
+				}
+			}
+		}
+
+		private RoomPair PairRooms(Vector3 point)
+		{
+			List<Room> rooms = FindRooms(point);
+			return PairRooms(rooms, point, rooms, point);
 		}
 
 		private RoomPair PairRooms(Vector3 p0, Vector3 p1)
 		{
-			List<RoomPair> list = new List<RoomPair>();
-			List<Room> list2 = FindRooms(p0);
-			List<Room> list3 = FindRooms(p1);
-			foreach (Room item in list2)
+			return PairRooms(FindRooms(p0), p0, FindRooms(p1), p1);
+		}
+
+		private static RoomPair PairRooms(List<Room> rooms0, Vector3 p0, List<Room> rooms1, Vector3 p1)
+		{
+			List<RoomPair> pairs = new List<RoomPair>();
+			foreach (Room room0 in rooms0)
 			{
-				foreach (Room item2 in list3)
+				foreach (Room room1 in rooms1)
 				{
-					if (item != item2)
+					if (room0 != room1)
 					{
-						list.Add(new RoomPair(item, p0, item2, p1));
+						pairs.Add(new RoomPair(room0, p0, room1, p1));
 					}
 				}
 			}
-			list.Sort();
-			if (list.Count <= 0)
+			pairs.Sort();
+			if (pairs.Count <= 0)
 			{
 				return null;
 			}
-			return list[0];
+			return pairs[0];
 		}
 
 		private List<Room> FindRooms(Vector3 point)
@@ -211,13 +270,19 @@ namespace Oni.Akira
 		{
 			foreach (Room room in mesh.Rooms)
 			{
-				float num = room.FloorPolygon.Points.Max((Vector3 p) => p.Y);
+				IEnumerable<Vector3> floorPoints = room.FloorPolygons.SelectMany((Polygon floor) => floor.Points);
+				float num = floorPoints.Max((Vector3 p) => p.Y);
 				float num2 = ((room.Ajacencies.Count != 0) ? room.Ajacencies.Max((RoomAdjacency a) => a.Ghost.Points.Max((Vector3 p) => p.Y)) : (num + 20f));
-				BoundingBox boundingBox = room.FloorPolygon.BoundingBox;
+				BoundingBox boundingBox = BoundingBox.CreateFromPoints(floorPoints);
 				boundingBox.Max.Y = num2;
 				room.BoundingBox = boundingBox;
 				room.Height = (num2 - num) * room.FloorPlane.Normal.Y;
-				room.BspTree = BuildBspTree(room.FloorPolygon, room.Height);
+				room.BspTree = BuildBspTree(room.FloorPolygons, room.Height);
+				room.ComponentBspTrees.Clear();
+				foreach (Polygon componentFloor in room.FloorPolygons)
+				{
+					room.ComponentBspTrees.Add(BuildBspTree(componentFloor, room.Height));
+				}
 			}
 		}
 	}

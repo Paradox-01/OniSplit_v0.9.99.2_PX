@@ -761,21 +761,28 @@ namespace Oni
 					ConvertSNDDHack(entry, writer);
 					continue;
 				}
-				template.Type.Copy(streamCache.GetReader(entry.SourceDescriptor), writer, delegate(CopyVisitor state)
+				try
 				{
-					if (state.Type == MetaType.RawOffset)
+					template.Type.Copy(streamCache.GetReader(entry.SourceDescriptor), writer, delegate(CopyVisitor state)
 					{
-						RemapRawOffset(entry, state);
-					}
-					else if (state.Type == MetaType.SepOffset)
-					{
-						RemapSepOffset(entry, state);
-					}
-					else if (state.Type is MetaPointer)
-					{
-						RemapLinkId(entry, state);
-					}
-				});
+						if (state.Type == MetaType.RawOffset)
+						{
+							RemapRawOffset(entry, state);
+						}
+						else if (state.Type == MetaType.SepOffset)
+						{
+							RemapSepOffset(entry, state);
+						}
+						else if (state.Type is MetaPointer)
+						{
+							RemapLinkId(entry, state);
+						}
+					});
+				}
+				catch (InvalidDataException ex)
+				{
+					throw new InvalidDataException(string.Format("Could not copy instance '{0}' ({1}) from '{2}': {3}", entry.SourceDescriptor.FullName, template.Tag, entry.SourceDescriptor.File.FilePath, ex.Message), ex);
+				}
 				if (entry.Code == TemplateTag.TXMP)
 				{
 					ConvertTXMPHack(entry, writer.BaseStream);

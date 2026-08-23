@@ -188,7 +188,7 @@ namespace Oni
 			{
 				throw new InvalidOperationException();
 			}
-			return new BinaryReader(file.FilePath, file)
+			return new BinaryReader(file.FilePath, file, this)
 			{
 				Position = DataOffset
 			};
@@ -200,7 +200,7 @@ namespace Oni
 			{
 				throw new InvalidOperationException();
 			}
-			return new BinaryReader(file.FilePath, file)
+			return new BinaryReader(file.FilePath, file, this)
 			{
 				Position = DataOffset + offset
 			};

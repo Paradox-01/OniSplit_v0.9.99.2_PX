@@ -552,7 +552,7 @@ namespace Oni.Akira
 			{
 				DatRoom datRoom = new DatRoom(room, rooms.Count)
 				{
-					BspTreeIndex = ConvertRoomBspTree(room.BspTree),
+					BspTreeIndex = ConvertRoomBspTree(room.BspTree, new Dictionary<RoomBspNode, int>()),
 					CompressedGridData = room.Grid.Compress(),
 					DebugData = room.Grid.DebugData,
 					SideListStart = roomSides.Count
@@ -580,21 +580,27 @@ namespace Oni.Akira
 			}
 		}
 
-		private int ConvertRoomBspTree(RoomBspNode node)
+		private int ConvertRoomBspTree(RoomBspNode node, Dictionary<RoomBspNode, int> nodeMap)
 		{
-			int count = roomBspNodes.Count;
+			int count;
+			if (nodeMap.TryGetValue(node, out count))
+			{
+				return count;
+			}
+			count = roomBspNodes.Count;
 			DatRoomBspNode datRoomBspNode = new DatRoomBspNode(node)
 			{
 				PlaneIndex = planes.Add(node.Plane)
 			};
 			roomBspNodes.Add(datRoomBspNode);
+			nodeMap.Add(node, count);
 			if (node.FrontChild != null)
 			{
-				datRoomBspNode.FrontChildIndex = ConvertRoomBspTree(node.FrontChild);
+				datRoomBspNode.FrontChildIndex = ConvertRoomBspTree(node.FrontChild, nodeMap);
 			}
 			if (node.BackChild != null)
 			{
-				datRoomBspNode.BackChildIndex = ConvertRoomBspTree(node.BackChild);
+				datRoomBspNode.BackChildIndex = ConvertRoomBspTree(node.BackChild, nodeMap);
 			}
 			return count;
 		}

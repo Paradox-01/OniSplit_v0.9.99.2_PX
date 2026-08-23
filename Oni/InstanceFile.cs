@@ -234,6 +234,11 @@ namespace Oni
 
 		public InstanceDescriptor ResolveLink(int id)
 		{
+			return ResolveLink(id, null);
+		}
+
+		public InstanceDescriptor ResolveLink(int id, InstanceDescriptor sourceDescriptor)
+		{
 			InstanceDescriptor descriptor = GetDescriptor(id);
 			if (descriptor == null || !descriptor.IsPlaceholder)
 			{
@@ -246,7 +251,17 @@ namespace Oni
 			InstanceFile instanceFile = fileManager.FindInstance(descriptor.FullName, this);
 			if (instanceFile == null || instanceFile == this)
 			{
-				Console.Error.WriteLine("Cannot find instance '{0}'", descriptor.FullName);
+				string resourceName = Path.GetFileNameWithoutExtension(filePath);
+				if (sourceDescriptor == null)
+				{
+					Console.Error.WriteLine("Cannot find instance '{0}'; requested by object resource '{1}' from '{2}'", descriptor.FullName, resourceName, filePath);
+				}
+				else
+				{
+					string sourceType = sourceDescriptor.Template == null ? "<unknown>" : sourceDescriptor.Template.Tag.ToString();
+					string sourceName = sourceDescriptor.HasName ? sourceDescriptor.FullName : string.Format("{0} instance #{1}", sourceType, sourceDescriptor.Index);
+					Console.Error.WriteLine("Cannot find instance '{0}'; requested by '{1}' in object resource '{2}' from '{3}'", descriptor.FullName, sourceName, resourceName, filePath);
+				}
 				return null;
 			}
 			if (instanceFile.header.Version == 1448227634)

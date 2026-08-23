@@ -71,7 +71,7 @@ namespace Oni.Akira
 		{
 			get
 			{
-				return ZTiles;
+				return zTiles;
 			}
 		}
 
@@ -127,32 +127,163 @@ namespace Oni.Akira
 			}
 		}
 
-		public void DrawStairsEntry(IEnumerable<Vector3> points)
+		public void DrawStairCorridor(IEnumerable<Vector3> edge0, IEnumerable<Vector3> edge1)
 		{
-			Vector3 vector = points.First();
-			Vector3 world = vector;
-			foreach (Vector3 point3 in points)
+			Vector3[] array = GetLowestPoints(edge0);
+			Vector3[] array2 = GetLowestPoints(edge1);
+			Vector3[] array3;
+			Vector3[] array4;
+			if (array[0].Y + array[1].Y > array2[0].Y + array2[1].Y)
 			{
-				if (point3.X < vector.X || (point3.X == vector.X && point3.Z < vector.Z))
-				{
-					vector = point3;
-				}
-				if (point3.X > world.X || (point3.X == world.X && point3.Z > world.Z))
-				{
-					world = point3;
-				}
+				array3 = array;
+				array4 = array2;
+			}
+			else
+			{
+				array3 = array2;
+				array4 = array;
+			}
+			Vector3 v = array3[1] - array3[0];
+			Vector3 v2 = array4[1] - array4[0];
+			Vector3 v3 = array4[0] - array3[0];
+			Vector3 vector;
+			Vector3 vector2;
+			Vector3 vector3;
+			Vector3 vector4;
+			if (v.X * v3.Z - v.Z * v3.X > 0f)
+			{
+				vector = array3[0];
+				vector2 = array3[1];
+			}
+			else
+			{
+				vector = array3[1];
+				vector2 = array3[0];
+			}
+			if (v2.X * v3.Z - v2.Z * v3.X < 0f)
+			{
+				vector3 = array4[0];
+				vector4 = array4[1];
+			}
+			else
+			{
+				vector3 = array4[1];
+				vector4 = array4[0];
 			}
 			Point point = WorldToGrid(vector);
-			Point point2 = WorldToGrid(world);
-			DrawLine(point, point2, RoomGridWeight.Stairs);
-			DrawLine(point - Point.UnitY, point2 - Point.UnitY, RoomGridWeight.Clear);
-			DrawLine(point + Point.UnitY, point2 + Point.UnitY, RoomGridWeight.Clear);
-			DrawLine(point + Point.UnitX, point2 + Point.UnitX, RoomGridWeight.Clear);
-			DrawLine(point - Point.UnitX, point2 - Point.UnitX, RoomGridWeight.Clear);
-			Vector3[] array = points.ToArray();
-			Array.Sort(array, (Vector3 x, Vector3 y) => x.Y.CompareTo(y.Y));
-			DrawImpassable(array[0]);
-			DrawImpassable(array[1]);
+			Point point2 = WorldToGrid(vector2);
+			Point point3 = WorldToGrid(vector3);
+			Point point4 = WorldToGrid(vector4);
+			int num = point4.X - point.X;
+			int num2 = point4.Y - point.Y;
+			int num3 = Math.Max(Math.Abs(num), Math.Abs(num2));
+			if (num3 > 0)
+			{
+				num = 4 * num / num3;
+				num2 = 4 * num2 / num3;
+				Point point5 = new Point(num, num2);
+				point -= point5;
+				point2 -= point5;
+				point3 += point5;
+				point4 += point5;
+			}
+			DrawTriangle(point, point2, point3, RoomGridWeight.Clear, false);
+			DrawTriangle(point3, point4, point, RoomGridWeight.Clear, false);
+		}
+
+		public void DrawStairOutlet(IEnumerable<Vector3> ghostPoints, Vector3 stairRoomCenter)
+		{
+			Vector3[] array = GetLowestPoints(ghostPoints);
+			Vector3 vector = array[0];
+			Vector3 vector2 = array[1];
+			Vector3 vector3 = new Vector3(0f - (vector2.Z - vector.Z), 0f, vector2.X - vector.X);
+			Vector3 vector4 = stairRoomCenter - (vector + vector2) / 2f;
+			if (Vector3.Dot(vector3, vector4) < 0f)
+			{
+				vector3 = -vector3;
+			}
+			vector3 = Vector3.Normalize(vector3) * 15f;
+			Point point = WorldToGrid(vector);
+			Point point2 = WorldToGrid(vector2);
+			Point point3 = WorldToGrid(vector + vector3);
+			Point point4 = WorldToGrid(vector2 + vector3);
+			DrawTriangle(point, point2, point3, RoomGridWeight.Stairs, true);
+			DrawTriangle(point2, point4, point3, RoomGridWeight.Stairs, true);
+			Point outletStart = new Point((point.X + point2.X) / 2, (point.Y + point2.Y) / 2);
+			Point outletEnd = new Point((point3.X + point4.X) / 2, (point3.Y + point4.Y) / 2);
+			// A SAT must not be severed by geometry admitted through OniSplit's coarser BNV intersection test.
+			if (ScanLine(outletStart, outletEnd).Any((Point outletPoint) => this[outletPoint.X, outletPoint.Y] == RoomGridWeight.Impassable))
+			{
+				DrawTriangle(point, point2, point3, RoomGridWeight.Stairs, false);
+				DrawTriangle(point2, point4, point3, RoomGridWeight.Stairs, false);
+			}
+			DrawImpassable(vector);
+			DrawImpassable(vector2);
+		}
+
+		private static Vector3[] GetLowestPoints(IEnumerable<Vector3> points)
+		{
+			float minY = points.Min((Vector3 point) => point.Y);
+			Vector3[] array = points.Where((Vector3 point) => Math.Abs(point.Y - minY) <= 0.1f).ToArray();
+			if (array.Length != 2)
+			{
+				throw new InvalidOperationException("A stair ghost must have exactly two lowest points.");
+			}
+			return array;
+		}
+
+		private void DrawTriangle(Point point1, Point point2, Point point3, RoomGridWeight weight, bool checkPrecedence)
+		{
+			Point[] array = new Point[3] { point1, point2, point3 };
+			Array.Sort(array, (Point left, Point right) => left.Y.CompareTo(right.Y));
+			Point top = array[0];
+			Point middle = array[1];
+			Point bottom = array[2];
+			int totalDistance = bottom.Y - top.Y;
+			if (totalDistance == 0)
+			{
+				int minX = Math.Max(Math.Min(top.X, Math.Min(middle.X, bottom.X)), 0);
+				int maxX = Math.Min(Math.Max(top.X, Math.Max(middle.X, bottom.X)), xTiles - 1);
+				if (top.Y >= 0 && top.Y < zTiles)
+				{
+					for (int x = minX; x <= maxX; x++)
+					{
+						if (!checkPrecedence || (int)this[x, top.Y] < (int)weight)
+							this[x, top.Y] = weight;
+					}
+				}
+				return;
+			}
+			int middleDistance = middle.Y - top.Y;
+			float interpolatedX = (top.X * (totalDistance - middleDistance) + middleDistance * bottom.X) / (float)totalDistance;
+			float leftMiddleX = Math.Min(interpolatedX, middle.X);
+			float rightMiddleX = Math.Max(interpolatedX, middle.X);
+			DrawTrianglePart(top.Y, middle.Y, top.X, top.X, leftMiddleX, rightMiddleX, weight, checkPrecedence);
+			DrawTrianglePart(middle.Y, bottom.Y, leftMiddleX, rightMiddleX, bottom.X, bottom.X, weight, checkPrecedence);
+		}
+
+		private void DrawTrianglePart(int y0, int y1, float left0, float right0, float left1, float right1, RoomGridWeight weight, bool checkPrecedence)
+		{
+			float yDistance = y1 - y0;
+			float left = left0;
+			float right = right0;
+			float deltaLeft = (left1 - left0) / yDistance;
+			float deltaRight = (right1 - right0) / yDistance;
+			for (int y = y0; y <= y1; y++)
+			{
+				if (y >= 0 && y < zTiles)
+				{
+					int minX = Math.Max(FMath.RoundToInt32(left), 0);
+					int maxX = Math.Min(FMath.RoundToInt32(right), xTiles - 1);
+					for (int x = minX; x <= maxX; x++)
+					{
+						if (!checkPrecedence || (int)this[x, y] < (int)weight)
+							this[x, y] = weight;
+					}
+				}
+				left += deltaLeft;
+				right += deltaRight;
+			}
 		}
 
 		public void DrawWall(IEnumerable<Vector3> points)
@@ -270,7 +401,7 @@ namespace Oni.Akira
 
 		private Point WorldToGrid(Vector3 world)
 		{
-			return new Point(FMath.TruncateToInt32((world.X - worldOrigin.X) / 4f) - -2 + 3, FMath.TruncateToInt32((world.Z - worldOrigin.Z) / 4f) - -2 + 3);
+			return new Point(FMath.RoundToInt32((world.X - worldOrigin.X) / 4f) - -2 + 3, FMath.RoundToInt32((world.Z - worldOrigin.Z) / 4f) - -2 + 3);
 		}
 
 		public RoomGrid GetGrid()

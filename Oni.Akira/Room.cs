@@ -7,6 +7,10 @@ namespace Oni.Akira
 	{
 		private Polygon floorPolygon;
 
+		private readonly List<Polygon> floorPolygons = new List<Polygon>();
+
+		private readonly List<RoomBspNode> componentBspTrees = new List<RoomBspNode>();
+
 		private RoomBspNode bspTree;
 
 		private BoundingBox boundingBox;
@@ -43,6 +47,14 @@ namespace Oni.Akira
 			}
 		}
 
+		public List<RoomBspNode> ComponentBspTrees
+		{
+			get
+			{
+				return componentBspTrees;
+			}
+		}
+
 		public RoomGrid Grid
 		{
 			get
@@ -64,6 +76,19 @@ namespace Oni.Akira
 			set
 			{
 				floorPolygon = value;
+				floorPolygons.Clear();
+				if (value != null)
+				{
+					floorPolygons.Add(value);
+				}
+			}
+		}
+
+		public List<Polygon> FloorPolygons
+		{
+			get
+			{
+				return floorPolygons;
 			}
 		}
 
@@ -109,14 +134,31 @@ namespace Oni.Akira
 
 		public bool Contains(Vector3 point)
 		{
-			if (!boundingBox.Contains(point))
+			return Contains(point, 0f);
+		}
+
+		public bool Contains(Vector3 point, float tolerance)
+		{
+			BoundingBox box = boundingBox;
+			box.Inflate(new Vector3(tolerance));
+			if (!box.Contains(point))
 			{
 				return false;
 			}
-			bool flag = false;
-			for (RoomBspNode roomBspNode = bspTree; roomBspNode != null; roomBspNode = (flag ? roomBspNode.FrontChild : roomBspNode.BackChild))
+			if (componentBspTrees.Count > 0)
 			{
-				flag = roomBspNode.Plane.DotCoordinate(point) >= 1E-05f;
+				return componentBspTrees.Any((RoomBspNode componentTree) => Contains(componentTree, point, tolerance));
+			}
+			return Contains(bspTree, point, tolerance);
+		}
+
+		private static bool Contains(RoomBspNode bspRoot, Vector3 point, float tolerance)
+		{
+			bool flag = false;
+			for (RoomBspNode roomBspNode = bspRoot; roomBspNode != null; roomBspNode = (flag ? roomBspNode.FrontChild : roomBspNode.BackChild))
+			{
+				float threshold = ((roomBspNode.FrontChild == null) ? tolerance : 0f);
+				flag = roomBspNode.Plane.DotCoordinate(point) > threshold;
 			}
 			return !flag;
 		}
@@ -143,9 +185,12 @@ namespace Oni.Akira
 		public List<Vector3[]> GetFloorPolygons()
 		{
 			List<Vector3[]> list = new List<Vector3[]>();
-			if (floorPolygon != null)
+			if (floorPolygons.Count > 0)
 			{
-				list.Add(floorPolygon.Points.ToArray());
+				foreach (Polygon floor in floorPolygons)
+				{
+					list.Add(floor.Points.ToArray());
+				}
 				return list;
 			}
 			Vector2 vector = new Vector2(boundingBox.Min.X, boundingBox.Min.Z);

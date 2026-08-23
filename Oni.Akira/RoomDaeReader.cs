@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Oni.Dae;
 
 namespace Oni.Akira
@@ -84,15 +85,17 @@ namespace Oni.Akira
 			int num2 = 0;
 			foreach (int vertexCount in primitives.VertexCounts)
 			{
-				Polygon polygon = CreatePolygon(array, num2, vertexCount);
+				int polygonStart = num2;
+				Polygon polygon = CreatePolygon(array, polygonStart, vertexCount);
 				num2 += vertexCount;
 				if (polygon == null)
 				{
-					Console.Error.WriteLine("BNV polygon: discarded, polygon is degenerate");
+					ReportDegeneratePolygon(node, array, polygonStart, vertexCount);
 					continue;
 				}
 				polygon.FileName = node.FileName;
 				polygon.ObjectName = node.Name;
+				polygon.SourceNodeId = node.Id;
 				if (Math.Abs(polygon.Plane.Normal.Y) < 0.0001f)
 				{
 					if (polygon.BoundingBox.Height < 1f)
@@ -119,29 +122,71 @@ namespace Oni.Akira
 			}
 		}
 
+		private void ReportDegeneratePolygon(Node node, int[] positionIndices, int startIndex, int vertexCount)
+		{
+			string objectName = node.Name ?? node.Id ?? "<unnamed>";
+			string nodeId = node.Id ?? "<unknown>";
+			string fileName = node.FileName ?? "<unknown>";
+			if (vertexCount == 0)
+			{
+				Console.Error.WriteLine("BNV polygon: discarded degenerate polygon for object '{0}' (node '{1}') in '{2}'; no source vertices", objectName, nodeId, fileName);
+				return;
+			}
+
+			Vector3 min = positions[positionIndices[startIndex]];
+			Vector3 max = min;
+			List<string> worldVertices = new List<string>(vertexCount);
+			for (int i = startIndex; i < startIndex + vertexCount; i++)
+			{
+				Vector3 point = positions[positionIndices[i]];
+				min.X = Math.Min(min.X, point.X);
+				min.Y = Math.Min(min.Y, point.Y);
+				min.Z = Math.Min(min.Z, point.Z);
+				max.X = Math.Max(max.X, point.X);
+				max.Y = Math.Max(max.Y, point.Y);
+				max.Z = Math.Max(max.Z, point.Z);
+				worldVertices.Add(FormatVector(point));
+			}
+			Console.Error.WriteLine("BNV polygon: discarded degenerate polygon for object '{0}' (node '{1}') in '{2}'; world center {3}; bounds {4} to {5}; vertices {6}", objectName, nodeId, fileName, FormatVector((min + max) / 2f), FormatVector(min), FormatVector(max), string.Join(", ", worldVertices.ToArray()));
+		}
+
+		private static string FormatVector(Vector3 value)
+		{
+			return string.Format(CultureInfo.InvariantCulture, "({0:0.###}, {1:0.###}, {2:0.###})", value.X, value.Y, value.Z);
+		}
+
 		private Polygon CreatePolygon(int[] positionIndices, int startIndex, int vertexCount)
 		{
-			int num = startIndex + vertexCount;
 			List<int> list = new List<int>(vertexCount);
-			for (int i = startIndex; i < num; i++)
+			for (int i = startIndex; i < startIndex + vertexCount; i++)
 			{
-				int num2 = positionIndices[(i == startIndex) ? (num - 1) : (i - 1)];
-				int num3 = positionIndices[i];
-				int index = positionIndices[(i + 1 == num) ? startIndex : (i + 1)];
-				if (num2 == num3)
+				int index = positionIndices[i];
+				if (list.Count == 0 || Vector3.DistanceSquared(mesh.Points[list[list.Count - 1]], mesh.Points[index]) >= 1E-06f)
 				{
-					Console.Error.WriteLine("BNV polygon: discarding degenerate edge {0}", mesh.Points[num3]);
-					continue;
+					list.Add(index);
 				}
-				Vector3 vector = mesh.Points[num2];
-				Vector3 vector2 = mesh.Points[num3];
-				Vector3 vector3 = mesh.Points[index];
+			}
+			if (list.Count > 1 && Vector3.DistanceSquared(mesh.Points[list[0]], mesh.Points[list[list.Count - 1]]) < 1E-06f)
+			{
+				list.RemoveAt(list.Count - 1);
+			}
+			for (int i = 0; i < list.Count && list.Count >= 3;)
+			{
+				Vector3 vector = mesh.Points[list[(i + list.Count - 1) % list.Count]];
+				Vector3 vector2 = mesh.Points[list[i]];
+				Vector3 vector3 = mesh.Points[list[(i + 1) % list.Count]];
 				Vector3 v = vector2 - vector;
 				Vector3 v2 = vector3 - vector2;
-				if (!(Vector3.Cross(v2, v).LengthSquared() < 1E-06f))
+				if (Vector3.Cross(v2, v).LengthSquared() < 1E-06f && Vector3.Dot(v, v2) > 0f)
 				{
-					list.Add(num3);
+					list.RemoveAt(i);
+					if (i == list.Count)
+					{
+						i = 0;
+					}
+					continue;
 				}
+				i++;
 			}
 			int[] array = list.ToArray();
 			if (CheckDegenerate(mesh.Points, array))
