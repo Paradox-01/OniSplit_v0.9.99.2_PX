@@ -152,11 +152,19 @@ namespace Oni.Akira
 
 		private Polygon[] polygons;
 
+		private bool getVanillaStairs;
+
 		public static PolygonMesh Read(InstanceDescriptor akev)
+		{
+			return Read(akev, false);
+		}
+
+		public static PolygonMesh Read(InstanceDescriptor akev, bool getVanillaStairs)
 		{
 			AkiraDatReader akiraDatReader = new AkiraDatReader
 			{
 				akev = akev,
+				getVanillaStairs = getVanillaStairs,
 				mesh = new PolygonMesh(new MaterialLibrary())
 			};
 			akiraDatReader.Read();
@@ -304,13 +312,22 @@ namespace Oni.Akira
 					polygons[j].Material = array[binaryReader2.ReadInt32() & 0xFFFF];
 				}
 			}
-			Polygon[] array2 = polygons;
-			foreach (Polygon polygon in array2)
+			StairRampClassifier stairRampClassifier = getVanillaStairs ? new StairRampClassifier(mesh) : null;
+			Material[] array2 = new Material[polygons.Length];
+			for (int k = 0; k < polygons.Length; k++)
 			{
-				Material marker = mesh.Materials.Markers.GetMarker(polygon);
-				if (marker != null)
+				Material marker = mesh.Materials.Markers.GetMarker(polygons[k]);
+				if (marker == null && stairRampClassifier != null && stairRampClassifier.IsStairRamp(polygons[k]))
 				{
-					polygon.Material = marker;
+					marker = mesh.Materials.Markers.Stairs;
+				}
+				array2[k] = marker;
+			}
+			for (int l = 0; l < polygons.Length; l++)
+			{
+				if (array2[l] != null)
+				{
+					polygons[l].Material = array2[l];
 				}
 			}
 		}

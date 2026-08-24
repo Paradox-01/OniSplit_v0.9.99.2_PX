@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
     <BaseIntermediateOutputPath>obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
-    <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;OniAgqgObjExporter\**;OniAgqgShadePatcher\**;OniOnlvAisaLinkPatcher\**</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;OniAgqgObjExporter\**;OniAgqgShadePatcher\**</DefaultItemExcludes>
   </PropertyGroup>
 </Project>

@@ -278,6 +278,7 @@ namespace Oni.Akira
 			this.mesh = mesh;
 			this.pointIndices = pointIndices;
 			this.plane = plane;
+			bbox = GetBoundingBox();
 			BuildFlags();
 		}
 

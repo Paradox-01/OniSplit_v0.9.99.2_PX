@@ -183,7 +183,8 @@ namespace Oni
 			Console.WriteLine("\t-extract:aif <directory>\tExtracts all sounds (SNDD) from a Oni .dat/.oni file in AIF format");
 			Console.WriteLine("\t-extract:txt <directory>\tExtracts all subtitles (SUBT) from a Oni .dat/.oni file in TXT format");
 			Console.WriteLine("\t-extract:obj <directory>\tExtracts all M3GM and ONCC instances to Wavefront OBJ files");
-			Console.WriteLine("\t-extract:dae <directory>\tExtracts all M3GM and ONCC instances to Collada files");
+			Console.WriteLine("\t-extract:dae <directory>\tExtracts all M3GM, ONCC, and AKEV instances to Collada files");
+			Console.WriteLine("\t\t<AKEV input> [-getVanillaStairs]\tRecover implicit vanilla stair ramps from AKEV input");
 			Console.WriteLine("\t-extract:xml <directory>\tExtracts all instances to XML files");
 			Console.WriteLine();
 			Console.WriteLine("\t-create:txmp <directory> [-nomipmaps] [-nouwrap] [-novwrap] [-format:bgr|rgba|bgr555|bgra5551|bgra4444|dxt1] [-envmap:texture_name] [-large] image_file");
@@ -360,9 +361,14 @@ namespace Oni
 			{
 				fileType = args[0].Substring(num + 1);
 			}
+			bool getVanillaStairs = Array.IndexOf(args, "-getVanillaStairs") >= 0;
+			if (getVanillaStairs && !string.Equals(fileType, "dae", StringComparison.Ordinal))
+			{
+				throw new ArgumentException("-getVanillaStairs is supported only by -extract:dae for AKEV input.");
+			}
 			string fullPath = Path.GetFullPath(args[1]);
 			List<string> fileList = GetFileList(args, 2);
-			DaeExporter daeExporter = new DaeExporter(args, fileManager, fullPath, fileType);
+			DaeExporter daeExporter = new DaeExporter(args, fileManager, fullPath, fileType, getVanillaStairs);
 			daeExporter.ExportFiles(fileList);
 			return 0;
 		}

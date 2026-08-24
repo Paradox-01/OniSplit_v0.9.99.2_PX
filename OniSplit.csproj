@@ -15,4 +15,8 @@
   <ItemGroup>
     <Reference Include="System.Xml" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="OniAgqgObjExporter.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="OniAgqgShadePatcher.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
 </Project>

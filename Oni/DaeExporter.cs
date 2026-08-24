@@ -20,9 +20,12 @@ namespace Oni
 
 		private readonly string fileType;
 
-		public DaeExporter(string[] args, InstanceFileManager fileManager, string outputDirPath, string fileType)
+		private readonly bool getVanillaStairs;
+
+		public DaeExporter(string[] args, InstanceFileManager fileManager, string outputDirPath, string fileType, bool getVanillaStairs)
 			: base(fileManager, outputDirPath)
 		{
+			this.getVanillaStairs = getVanillaStairs;
 			foreach (string text in args)
 			{
 				if (text == "-noanim")
@@ -73,7 +76,7 @@ namespace Oni
 			TemplateTag tag = descriptor.Template.Tag;
 			if (tag == TemplateTag.AKEV)
 			{
-				PolygonMesh mesh = AkiraDatReader.Read(descriptor);
+				PolygonMesh mesh = AkiraDatReader.Read(descriptor, getVanillaStairs);
 				AkiraDaeWriter.Write(mesh, descriptor.Name, base.OutputDirPath, fileType);
 				return;
 			}
