@@ -733,6 +733,7 @@ namespace Oni.Dae.IO
 			xml.WriteEndElement();
 		}
 
+		// Writes -getAgqgPerPolygon data as an ignorable COLLADA 1.4 extension.
 		private void WritePolygonMetadata(MeshPrimitives primitives)
 		{
 			if (primitives.PolygonMetadata.Count == 0)

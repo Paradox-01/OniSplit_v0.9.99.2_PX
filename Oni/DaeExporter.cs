@@ -22,6 +22,7 @@ namespace Oni
 
 		private readonly bool getVanillaStairs;
 
+		// Enables the additional DAE produced by -getAgqgPerPolygon.
 		private readonly bool getAgqgPerPolygon;
 
 		public DaeExporter(string[] args, InstanceFileManager fileManager, string outputDirPath, string fileType, bool getVanillaStairs, bool getAgqgPerPolygon)
@@ -81,6 +82,7 @@ namespace Oni
 			{
 				PolygonMesh mesh = AkiraDatReader.Read(descriptor, getVanillaStairs);
 				AkiraDaeWriter.Write(mesh, descriptor.Name, base.OutputDirPath, fileType);
+				// Keep the -getAgqgPerPolygon output isolated from the legacy AKEV exports.
 				if (getAgqgPerPolygon)
 				{
 					AkiraAgqgDaeWriter.Write(mesh, descriptor.Name, base.OutputDirPath);

@@ -363,6 +363,7 @@ namespace Oni
 			{
 				fileType = args[0].Substring(num + 1);
 			}
+			// -getAgqgPerPolygon (and its long alias) overrides an accidentally supplied -getVanillaStairs.
 			bool getAgqgPerPolygon = Array.IndexOf(args, "-getAgqgPerPolygon") >= 0 || Array.IndexOf(args, "-getLevelWithAgqgFlagsPerPolygon") >= 0;
 			bool getVanillaStairs = !getAgqgPerPolygon && Array.IndexOf(args, "-getVanillaStairs") >= 0;
 			if ((getVanillaStairs || getAgqgPerPolygon) && !string.Equals(fileType, "dae", StringComparison.Ordinal))

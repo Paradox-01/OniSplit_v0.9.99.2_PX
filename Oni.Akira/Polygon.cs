@@ -28,6 +28,7 @@ namespace Oni.Akira
 
 		private int scriptId;
 
+		// Source values retained for the -getAgqgPerPolygon DAE metadata and materials.
 		private int agqgIndex = -1;
 
 		private uint agqgFlags;

@@ -231,6 +231,7 @@ namespace Oni.Akira
 					int[] array3 = binaryReader5.ReadInt32Array(4);
 					Color[] array4 = binaryReader5.ReadColorArray(4);
 					GunkFlags gunkFlags = (GunkFlags)binaryReader5.ReadInt32();
+					// Preserve the unmodified AGQG word for -getAgqgPerPolygon metadata.
 					uint agqgFlags = (uint)gunkFlags;
 					int num = binaryReader5.ReadInt32();
 					if ((gunkFlags & GunkFlags.Triangle) != GunkFlags.None)
@@ -314,6 +315,7 @@ namespace Oni.Akira
 				for (int j = 0; j < num; j++)
 				{
 					Material material = array[binaryReader2.ReadInt32() & 0xFFFF];
+					// -getAgqgPerPolygon uses this value after legacy marker substitution changes Material.
 					polygons[j].OriginalMaterial = material;
 					polygons[j].Material = material;
 				}

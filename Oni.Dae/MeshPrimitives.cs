@@ -10,6 +10,7 @@ namespace Oni.Dae
 
 		private readonly List<int> vertexCounts;
 
+		// Optional COLLADA extension data used by -getAgqgPerPolygon.
 		private readonly List<Dictionary<string, string>> polygonMetadata;
 
 		public MeshPrimitiveType PrimitiveType

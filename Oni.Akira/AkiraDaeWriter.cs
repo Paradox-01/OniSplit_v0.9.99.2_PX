@@ -37,6 +37,7 @@ namespace Oni.Akira
 				}
 			}
 
+			// Set only by -getAgqgPerPolygon so legacy exports keep marker materials.
 			public bool UseOriginalMaterial { get; set; }
 
 			public int[] PointIndices
@@ -166,6 +167,7 @@ namespace Oni.Akira
 				polygons.Add(new DaePolygon(polygon, Remap(polygon.Mesh.Points, polygon.PointIndices, points, uniquePoints), Remap(polygon.Mesh.TexCoords, polygon.TexCoordIndices, texCoords, uniqueTexCoords), Remap(polygon.Colors, colors, uniqueColors)));
 			}
 
+			// Reuses normal geometry and vertex-color handling for -getAgqgPerPolygon.
 			public void AddAgqgPolygon(Polygon polygon)
 			{
 				DaePolygon daePolygon = new DaePolygon(polygon, Remap(polygon.Mesh.Points, polygon.PointIndices, points, uniquePoints), Remap(polygon.Mesh.TexCoords, polygon.TexCoordIndices, texCoords, uniqueTexCoords), Remap(polygon.Colors, colors, uniqueColors));
@@ -251,6 +253,7 @@ namespace Oni.Akira
 				}
 			}
 
+			// Adds the integer fields requested by -getAgqgPerPolygon in emitted polygon order.
 			private static void AddAgqgMetadata(MeshPrimitives primitives, Polygon polygon)
 			{
 				primitives.MetadataProfile = "OniSplit";
