@@ -253,19 +253,24 @@ namespace Oni.Akira
 				}
 			}
 
-			// Adds the integer fields requested by -getAgqgPerPolygon in emitted polygon order.
+			// Adds the fields requested by -getAgqgPerPolygon in emitted polygon order.
 			private static void AddAgqgMetadata(MeshPrimitives primitives, Polygon polygon)
 			{
 				primitives.MetadataProfile = "OniSplit";
 				primitives.MetadataNamespace = "https://github.com/Paradox-01/OniSplit/metadata/agqg/1.0";
 				Dictionary<string, string> metadata = new Dictionary<string, string>();
 				metadata.Add("agqg_index", polygon.AgqgIndex.ToString(CultureInfo.InvariantCulture));
-				metadata.Add("flags", polygon.AgqgFlags.ToString(CultureInfo.InvariantCulture));
+				metadata.Add("flags", FormatAgqgFlags(polygon.AgqgFlags));
 				metadata.Add("object_id_raw", polygon.AgqgObjectId.ToString(CultureInfo.InvariantCulture));
-				metadata.Add("object_type", polygon.ObjectType.ToString(CultureInfo.InvariantCulture));
-				metadata.Add("object_id", polygon.ObjectId.ToString(CultureInfo.InvariantCulture));
+				metadata.Add("cjbo_type", polygon.ObjectType.ToString(CultureInfo.InvariantCulture));
+				metadata.Add("cjbo_id", polygon.ObjectId.ToString(CultureInfo.InvariantCulture));
 				metadata.Add("bsl_id", polygon.ScriptId.ToString(CultureInfo.InvariantCulture));
 				primitives.PolygonMetadata.Add(metadata);
+			}
+
+			private static string FormatAgqgFlags(uint flags)
+			{
+				return string.Format(CultureInfo.InvariantCulture, "{0:X2} {1:X2} {2:X2} {3:X2}", (flags >> 24) & 0xFFu, (flags >> 16) & 0xFFu, (flags >> 8) & 0xFFu, flags & 0xFFu);
 			}
 
 			public void InstantiateMaterials(GeometryInstance inst, DaeSceneBuilder sceneBuilder)

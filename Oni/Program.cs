@@ -185,7 +185,8 @@ namespace Oni
 			Console.WriteLine("\t-extract:obj <directory>\tExtracts all M3GM and ONCC instances to Wavefront OBJ files");
 			Console.WriteLine("\t-extract:dae <directory>\tExtracts all M3GM, ONCC, and AKEV instances to Collada files");
 			Console.WriteLine("\t\t<AKEV input> [-getVanillaStairs]\tRecover implicit vanilla stair ramps from AKEV input");
-			Console.WriteLine("\t\t<AKEV input> [-getAgqgPerPolygon]\tAlso export original materials and per-polygon AGQG metadata");
+			Console.WriteLine("\t\t<AKEV*.oni> [-getAgqgPerPolygon]\tWildcards resolve to the actual AKEV filenames");
+			Console.WriteLine("\t\t\tAlso export original materials and per-polygon AGQG metadata");
 			Console.WriteLine("\t\t\t[-getLevelWithAgqgFlagsPerPolygon] is an alias for -getAgqgPerPolygon");
 			Console.WriteLine("\t-extract:xml <directory>\tExtracts all instances to XML files");
 			Console.WriteLine();
@@ -856,6 +857,7 @@ namespace Oni
 				{
 					continue;
 				}
+				// Resolve wildcard inputs such as AKEV*.oni to their concrete filenames.
 				string[] files = Directory.GetFiles(directoryName, fileName);
 				foreach (string text in files)
 				{
