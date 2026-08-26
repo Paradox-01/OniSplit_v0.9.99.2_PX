@@ -10,6 +10,8 @@ namespace Oni.Dae
 
 		private readonly List<int> vertexCounts;
 
+		private readonly List<Dictionary<string, string>> polygonMetadata;
+
 		public MeshPrimitiveType PrimitiveType
 		{
 			get
@@ -36,11 +38,24 @@ namespace Oni.Dae
 			}
 		}
 
+		public string MetadataProfile { get; set; }
+
+		public string MetadataNamespace { get; set; }
+
+		public List<Dictionary<string, string>> PolygonMetadata
+		{
+			get
+			{
+				return polygonMetadata;
+			}
+		}
+
 		public MeshPrimitives(MeshPrimitiveType primitiveType)
 		{
 			this.primitiveType = primitiveType;
 			inputs = new List<IndexedInput>(3);
 			vertexCounts = new List<int>();
+			polygonMetadata = new List<Dictionary<string, string>>();
 		}
 
 		public MeshPrimitives(MeshPrimitiveType primitiveType, IEnumerable<IndexedInput> inputs)
@@ -48,6 +63,7 @@ namespace Oni.Dae
 			this.primitiveType = primitiveType;
 			this.inputs = new List<IndexedInput>(inputs);
 			vertexCounts = new List<int>();
+			polygonMetadata = new List<Dictionary<string, string>>();
 		}
 	}
 }

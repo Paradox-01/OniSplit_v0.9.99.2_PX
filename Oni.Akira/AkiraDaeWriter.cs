@@ -33,9 +33,11 @@ namespace Oni.Akira
 			{
 				get
 				{
-					return material;
+					return UseOriginalMaterial ? source.OriginalMaterial : material;
 				}
 			}
+
+			public bool UseOriginalMaterial { get; set; }
 
 			public int[] PointIndices
 			{
@@ -78,7 +80,7 @@ namespace Oni.Akira
 			}
 		}
 
-		private class DaeMeshBuilder
+		internal class DaeMeshBuilder
 		{
 			private readonly List<DaePolygon> polygons = new List<DaePolygon>();
 
@@ -164,6 +166,13 @@ namespace Oni.Akira
 				polygons.Add(new DaePolygon(polygon, Remap(polygon.Mesh.Points, polygon.PointIndices, points, uniquePoints), Remap(polygon.Mesh.TexCoords, polygon.TexCoordIndices, texCoords, uniqueTexCoords), Remap(polygon.Colors, colors, uniqueColors)));
 			}
 
+			public void AddAgqgPolygon(Polygon polygon)
+			{
+				DaePolygon daePolygon = new DaePolygon(polygon, Remap(polygon.Mesh.Points, polygon.PointIndices, points, uniquePoints), Remap(polygon.Mesh.TexCoords, polygon.TexCoordIndices, texCoords, uniqueTexCoords), Remap(polygon.Colors, colors, uniqueColors));
+				daePolygon.UseOriginalMaterial = true;
+				polygons.Add(daePolygon);
+			}
+
 			private static int[] Remap<T>(IList<T> values, int[] indices, List<T> list, Dictionary<T, int> unique) where T : struct
 			{
 				int[] array = new int[indices.Length];
@@ -235,7 +244,25 @@ namespace Oni.Akira
 					{
 						indexedInput3.Indices.AddRange(polygon.ColorIndices);
 					}
+					if (polygon.UseOriginalMaterial)
+					{
+						AddAgqgMetadata(value, polygon.Source);
+					}
 				}
+			}
+
+			private static void AddAgqgMetadata(MeshPrimitives primitives, Polygon polygon)
+			{
+				primitives.MetadataProfile = "OniSplit";
+				primitives.MetadataNamespace = "https://github.com/Paradox-01/OniSplit/metadata/agqg/1.0";
+				Dictionary<string, string> metadata = new Dictionary<string, string>();
+				metadata.Add("agqg_index", polygon.AgqgIndex.ToString(CultureInfo.InvariantCulture));
+				metadata.Add("flags", polygon.AgqgFlags.ToString(CultureInfo.InvariantCulture));
+				metadata.Add("object_id_raw", polygon.AgqgObjectId.ToString(CultureInfo.InvariantCulture));
+				metadata.Add("object_type", polygon.ObjectType.ToString(CultureInfo.InvariantCulture));
+				metadata.Add("object_id", polygon.ObjectId.ToString(CultureInfo.InvariantCulture));
+				metadata.Add("bsl_id", polygon.ScriptId.ToString(CultureInfo.InvariantCulture));
+				primitives.PolygonMetadata.Add(metadata);
 			}
 
 			public void InstantiateMaterials(GeometryInstance inst, DaeSceneBuilder sceneBuilder)
@@ -277,7 +304,7 @@ namespace Oni.Akira
 			}
 		}
 
-		private class DaeSceneBuilder
+		internal class DaeSceneBuilder
 		{
 			private readonly Scene scene;
 

@@ -28,6 +28,14 @@ namespace Oni.Akira
 
 		private int scriptId;
 
+		private int agqgIndex = -1;
+
+		private uint agqgFlags;
+
+		private int agqgObjectId = -1;
+
+		private Material originalMaterial;
+
 		private string fileName;
 
 		private string objectName;
@@ -195,6 +203,54 @@ namespace Oni.Akira
 			set
 			{
 				scriptId = value;
+			}
+		}
+
+		public int AgqgIndex
+		{
+			get
+			{
+				return agqgIndex;
+			}
+			set
+			{
+				agqgIndex = value;
+			}
+		}
+
+		public uint AgqgFlags
+		{
+			get
+			{
+				return agqgFlags;
+			}
+			set
+			{
+				agqgFlags = value;
+			}
+		}
+
+		public int AgqgObjectId
+		{
+			get
+			{
+				return agqgObjectId;
+			}
+			set
+			{
+				agqgObjectId = value;
+			}
+		}
+
+		public Material OriginalMaterial
+		{
+			get
+			{
+				return originalMaterial;
+			}
+			set
+			{
+				originalMaterial = value;
 			}
 		}
 

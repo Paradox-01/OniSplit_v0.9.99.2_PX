@@ -729,6 +729,35 @@ namespace Oni.Dae.IO
 				num4 += vertexCount2;
 			}
 			xml.WriteEndElement();
+			WritePolygonMetadata(primitives);
+			xml.WriteEndElement();
+		}
+
+		private void WritePolygonMetadata(MeshPrimitives primitives)
+		{
+			if (primitives.PolygonMetadata.Count == 0)
+			{
+				return;
+			}
+			if (primitives.PolygonMetadata.Count != primitives.VertexCounts.Count)
+			{
+				throw new InvalidOperationException("Per-polygon metadata count does not match the primitive polygon count.");
+			}
+			xml.WriteStartElement("extra");
+			xml.WriteStartElement("technique");
+			xml.WriteAttributeString("profile", primitives.MetadataProfile);
+			xml.WriteStartElement("onisplit", "polygon_metadata", primitives.MetadataNamespace);
+			foreach (Dictionary<string, string> metadata in primitives.PolygonMetadata)
+			{
+				xml.WriteStartElement("onisplit", "polygon", primitives.MetadataNamespace);
+				foreach (KeyValuePair<string, string> field in metadata)
+				{
+					xml.WriteAttributeString(field.Key, field.Value);
+				}
+				xml.WriteEndElement();
+			}
+			xml.WriteEndElement();
+			xml.WriteEndElement();
 			xml.WriteEndElement();
 		}
 

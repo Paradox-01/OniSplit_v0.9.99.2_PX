@@ -231,6 +231,7 @@ namespace Oni.Akira
 					int[] array3 = binaryReader5.ReadInt32Array(4);
 					Color[] array4 = binaryReader5.ReadColorArray(4);
 					GunkFlags gunkFlags = (GunkFlags)binaryReader5.ReadInt32();
+					uint agqgFlags = (uint)gunkFlags;
 					int num = binaryReader5.ReadInt32();
 					if ((gunkFlags & GunkFlags.Triangle) != GunkFlags.None)
 					{
@@ -243,7 +244,10 @@ namespace Oni.Akira
 					{
 						Flags = (GunkFlags)((uint)gunkFlags & 0xFFFFFF7Fu),
 						TexCoordIndices = array3,
-						Colors = array4
+						Colors = array4,
+						AgqgIndex = j,
+						AgqgFlags = agqgFlags,
+						AgqgObjectId = num
 					};
 					if (num == -1)
 					{
@@ -309,7 +313,9 @@ namespace Oni.Akira
 				int num = binaryReader2.ReadInt32();
 				for (int j = 0; j < num; j++)
 				{
-					polygons[j].Material = array[binaryReader2.ReadInt32() & 0xFFFF];
+					Material material = array[binaryReader2.ReadInt32() & 0xFFFF];
+					polygons[j].OriginalMaterial = material;
+					polygons[j].Material = material;
 				}
 			}
 			StairRampClassifier stairRampClassifier = getVanillaStairs ? new StairRampClassifier(mesh) : null;

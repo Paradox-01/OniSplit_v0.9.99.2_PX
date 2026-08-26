@@ -22,10 +22,13 @@ namespace Oni
 
 		private readonly bool getVanillaStairs;
 
-		public DaeExporter(string[] args, InstanceFileManager fileManager, string outputDirPath, string fileType, bool getVanillaStairs)
+		private readonly bool getAgqgPerPolygon;
+
+		public DaeExporter(string[] args, InstanceFileManager fileManager, string outputDirPath, string fileType, bool getVanillaStairs, bool getAgqgPerPolygon)
 			: base(fileManager, outputDirPath)
 		{
 			this.getVanillaStairs = getVanillaStairs;
+			this.getAgqgPerPolygon = getAgqgPerPolygon;
 			foreach (string text in args)
 			{
 				if (text == "-noanim")
@@ -78,6 +81,10 @@ namespace Oni
 			{
 				PolygonMesh mesh = AkiraDatReader.Read(descriptor, getVanillaStairs);
 				AkiraDaeWriter.Write(mesh, descriptor.Name, base.OutputDirPath, fileType);
+				if (getAgqgPerPolygon)
+				{
+					AkiraAgqgDaeWriter.Write(mesh, descriptor.Name, base.OutputDirPath);
+				}
 				return;
 			}
 			Scene scene = new Scene();
