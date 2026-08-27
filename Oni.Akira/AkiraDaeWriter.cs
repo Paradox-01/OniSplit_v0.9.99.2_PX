@@ -466,7 +466,7 @@ namespace Oni.Akira
 
 		private Dictionary<int, DaeSceneBuilder> scripts;
 
-		private static readonly string[] objectTypeNames = new string[19]
+		internal static readonly string[] objectTypeNames = new string[19]
 		{
 			"", "char", "patr", "door", "flag", "furn", "", "", "part", "pwru",
 			"sndg", "trgv", "weap", "trig", "turr", "cons", "cmbt", "mele", "neut"
