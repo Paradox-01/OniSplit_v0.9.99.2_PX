@@ -258,11 +258,12 @@ namespace Oni.Xml
 			}
 			string text = tram.FullName + ".dae";
 			bool flag = DaeReader.CommandLineArgs.Any((string a) => a == "-blender");
+			bool plotEveryFrame = DaeReader.CommandLineArgs.Any((string a) => a == "-dense");
 			if (flag)
 			{
 				Console.WriteLine("AnimationDaeWriter: custom axis conversion.");
 			}
-			AnimationDaeWriter.Write(animBodyNode, animation, 0, flag, flag);
+			AnimationDaeWriter.Write(animBodyNode, animation, 0, flag, flag, plotEveryFrame);
 			Writer.WriteFile(Path.Combine(base.OutputDirPath, text), new Scene
 			{
 				CustomAxisConversion = flag,
@@ -277,7 +278,8 @@ namespace Oni.Xml
 			if (mergedAnim != null)
 			{
 				bool flag = DaeReader.CommandLineArgs.Any((string a) => a == "-blender");
-				AnimationDaeWriter.Write(animBodyNode, mergedAnim, 0, flag, flag);
+				bool plotEveryFrame = DaeReader.CommandLineArgs.Any((string a) => a == "-dense");
+				AnimationDaeWriter.Write(animBodyNode, mergedAnim, 0, flag, flag, plotEveryFrame);
 				Writer.WriteFile(Path.Combine(base.OutputDirPath, animDaeFileName), new Scene
 				{
 					CustomAxisConversion = flag,

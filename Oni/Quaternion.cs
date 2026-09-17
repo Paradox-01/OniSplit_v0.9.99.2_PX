@@ -86,39 +86,38 @@ namespace Oni
 			return CreateFromAxisAngle(Vector3.UnitX, x) * CreateFromAxisAngle(Vector3.UnitY, y) * CreateFromAxisAngle(Vector3.UnitZ, z);
 		}
 
+		public static Quaternion CreateFromEulerRevXYZ(float x, float y, float z)
+		{
+			x = MathHelper.ToRadians(x);
+			y = MathHelper.ToRadians(y);
+			z = MathHelper.ToRadians(z);
+			return CreateFromAxisAngle(Vector3.UnitZ, z) * CreateFromAxisAngle(Vector3.UnitY, y) * CreateFromAxisAngle(Vector3.UnitX, x);
+		}
+
 		public Vector3 ToEulerXYZ()
 		{
-			float num = 0f - W;
-			float x = X;
-			float y = Y;
-			float z = Z;
-			float num2 = -1f;
-			float num3 = 2f * (num * y + num2 * x * z);
+			float num = 2f * (X * Y - W * Z);
+			float num2 = 1f - 2f * (Y * Y + Z * Z);
 			Vector3 result = default(Vector3);
-			if (num3 > 0.999f)
+			result.Z = 0f - MathHelper.ToDegrees((float)Math.Atan2(num, num2));
+			float num3 = 2f * ((0f - W) * Y - X * Z);
+			if (Math.Abs(num3) >= 1f)
 			{
-				result.X = MathHelper.ToDegrees(-2f * (float)Math.Atan2(x, num));
-				result.Y = -90f;
-				result.Z = 0f;
-			}
-			else if (num3 < -0.999f)
-			{
-				result.X = MathHelper.ToDegrees(2f * (float)Math.Atan2(x, num));
-				result.Y = 90f;
-				result.Z = 0f;
+				result.Y = -90f * (float)Math.Sign(num3);
 			}
 			else
 			{
-				result.X = 0f - MathHelper.ToDegrees((float)Math.Atan2(2f * (num * x - num2 * y * z), 1f - 2f * (x * x + y * y)));
 				result.Y = 0f - MathHelper.ToDegrees((float)Math.Asin(num3));
-				result.Z = 0f - MathHelper.ToDegrees((float)Math.Atan2(2f * (num * z - num2 * x * y), 1f - 2f * (y * y + z * z)));
 			}
+			float num4 = 2f * (Y * Z - W * X);
+			float num5 = 1f - 2f * (X * X + Y * Y);
+			result.X = 0f - MathHelper.ToDegrees((float)Math.Atan2(num4, num5));
 			return result;
 		}
 
 		public Vector3 ToEulerRevXYZ()
 		{
-			float num = 2f * (W * X + Y * Z);
+			float num = 2f * (Y * Z + W * X);
 			float num2 = 1f - 2f * (X * X + Y * Y);
 			Vector3 result = default(Vector3);
 			result.X = MathHelper.ToDegrees((float)Math.Atan2(num, num2));
@@ -131,7 +130,7 @@ namespace Oni
 			{
 				result.Y = MathHelper.ToDegrees((float)Math.Asin(num3));
 			}
-			float num4 = 2f * (W * Z + X * Y);
+			float num4 = 2f * (X * Y + W * Z);
 			float num5 = 1f - 2f * (Y * Y + Z * Z);
 			result.Z = MathHelper.ToDegrees((float)Math.Atan2(num4, num5));
 			return result;
@@ -199,10 +198,10 @@ namespace Oni
 			return result;
 		}
 
-		public static Quaternion Lerp(Quaternion q1, Quaternion q2, float amount)
+		public static Quaternion Lerp(Quaternion q1, Quaternion q2, float amount, bool reduceTo360 = true)
 		{
 			float num = 1f - amount;
-			if (Dot(q1, q2) < 0f)
+			if (reduceTo360 && Dot(q1, q2) < 0f)
 			{
 				amount = 0f - amount;
 			}
@@ -212,6 +211,37 @@ namespace Oni
 			q1.W = num * q1.W + amount * q2.W;
 			q1.Normalize();
 			return q1;
+		}
+
+		public static Quaternion Slerp(Quaternion q1, Quaternion q2, float amount, bool reduceTo360 = true)
+		{
+			bool flag = false;
+			double num = Dot(q1, q2);
+			if (reduceTo360 && num < 0.0)
+			{
+				num = 0.0 - num;
+				flag = true;
+			}
+			num = Math.Max(-1.0, Math.Min(1.0, num));
+			double num2 = Math.Acos(num);
+			double num3 = Math.Sin(num2);
+			double num4;
+			double num5;
+			if (num3 > 0.005)
+			{
+				num4 = Math.Sin((double)(1f - amount) * num2) / num3;
+				num5 = Math.Sin((double)amount * num2) / num3;
+			}
+			else
+			{
+				num4 = 1f - amount;
+				num5 = amount;
+			}
+			if (flag)
+			{
+				num5 = 0.0 - num5;
+			}
+			return q1 * (float)num4 + q2 * (float)num5;
 		}
 
 		public static float Dot(Quaternion q1, Quaternion q2)
@@ -239,13 +269,12 @@ namespace Oni
 
 		public static Quaternion operator *(Quaternion q1, Quaternion q2)
 		{
-			return new Quaternion
-			{
-				X = q1.X * q2.W + q1.Y * q2.Z - q1.Z * q2.Y + q1.W * q2.X,
-				Y = (0f - q1.X) * q2.Z + q1.Y * q2.W + q1.Z * q2.X + q1.W * q2.Y,
-				Z = q1.X * q2.Y - q1.Y * q2.X + q1.Z * q2.W + q1.W * q2.Z,
-				W = (0f - q1.X) * q2.X - q1.Y * q2.Y - q1.Z * q2.Z + q1.W * q2.W
-			};
+			Quaternion result = default(Quaternion);
+			result.X = q1.X * q2.W + q1.Y * q2.Z - q1.Z * q2.Y + q1.W * q2.X;
+			result.Y = (0f - q1.X) * q2.Z + q1.Y * q2.W + q1.Z * q2.X + q1.W * q2.Y;
+			result.Z = q1.X * q2.Y - q1.Y * q2.X + q1.Z * q2.W + q1.W * q2.Z;
+			result.W = (0f - q1.X) * q2.X - q1.Y * q2.Y - q1.Z * q2.Z + q1.W * q2.W;
+			return result;
 		}
 
 		public static Quaternion operator *(Quaternion q, float s)

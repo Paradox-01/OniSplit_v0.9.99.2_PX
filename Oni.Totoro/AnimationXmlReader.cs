@@ -28,13 +28,12 @@ namespace Oni.Totoro
 
 		public static Animation Read(XmlReader xml, string baseDir)
 		{
-			AnimationXmlReader animationXmlReader = new AnimationXmlReader
-			{
-				xml = xml,
-				basePath = baseDir,
-				animation = new Animation()
-			};
-			Animation animation = animationXmlReader.Read();
+			AnimationXmlReader animationXmlReader = new AnimationXmlReader();
+			animationXmlReader.xml = xml;
+			animationXmlReader.basePath = baseDir;
+			animationXmlReader.animation = new Animation();
+			AnimationXmlReader animationXmlReader2 = animationXmlReader;
+			Animation animation = animationXmlReader2.Read();
 			animation.ValidateFrames();
 			return animation;
 		}
@@ -114,12 +113,12 @@ namespace Oni.Totoro
 
 		private void ReadVelocities()
 		{
-			if (xml.IsStartElement("Velocities") && !xml.SkipEmpty())
+			if (xml.IsStartElement("Velocities") && !Utils.SkipEmpty(xml))
 			{
 				xml.ReadStartElement();
 				while (xml.IsStartElement())
 				{
-					animation.Velocities.Add(xml.ReadElementContentAsVector2());
+					animation.Velocities.Add(Oni.Xml.XmlReaderExtensions.ReadElementContentAsVector2(xml, null));
 				}
 				xml.ReadEndElement();
 			}
@@ -176,7 +175,7 @@ namespace Oni.Totoro
 						keyFrame.Rotation.W = 0f - XmlConvert.ToSingle(array[4]);
 						break;
 					default:
-						throw new InvalidDataException(string.Format("Unknonw animation key type '{0}'", localName));
+						throw new InvalidDataException(string.Format("Unknown animation key type '{0}'", localName));
 					}
 					num += keyFrame.Duration;
 					list.Add(keyFrame);
@@ -193,7 +192,7 @@ namespace Oni.Totoro
 
 		private void ReadHeights()
 		{
-			if (xml.IsStartElement("Heights") && !xml.SkipEmpty())
+			if (xml.IsStartElement("Heights") && !Utils.SkipEmpty(xml))
 			{
 				xml.ReadStartElement();
 				while (xml.IsStartElement())
@@ -206,12 +205,12 @@ namespace Oni.Totoro
 
 		private void ReadThrowInfo()
 		{
-			if (xml.IsStartElement("ThrowSource") && !xml.SkipEmpty())
+			if (xml.IsStartElement("ThrowSource") && !Utils.SkipEmpty(xml))
 			{
 				animation.ThrowSource = new ThrowInfo();
 				xml.ReadStartElement("ThrowSource");
 				xml.ReadStartElement("TargetAdjustment");
-				animation.ThrowSource.Position = xml.ReadElementContentAsVector3("Position");
+				animation.ThrowSource.Position = Oni.Xml.XmlReaderExtensions.ReadElementContentAsVector3(xml, "Position");
 				animation.ThrowSource.Angle = xml.ReadElementContentAsFloat("Angle", "");
 				xml.ReadEndElement();
 				animation.ThrowSource.Distance = xml.ReadElementContentAsFloat("Distance", "");
@@ -348,7 +347,7 @@ namespace Oni.Totoro
 
 		private void ReadRawArray<T>(string name, List<T> list, Action<T> elementReader) where T : new()
 		{
-			if (!xml.SkipEmpty())
+			if (!Utils.SkipEmpty(xml))
 			{
 				xml.ReadStartElement();
 				while (xml.IsStartElement())
@@ -364,7 +363,7 @@ namespace Oni.Totoro
 		private void ImportDaeAnimation()
 		{
 			string text = xml.GetAttribute("Path");
-			bool flag = xml.SkipEmpty();
+			bool flag = Utils.SkipEmpty(xml);
 			if (!flag)
 			{
 				xml.ReadStartElement();
@@ -381,7 +380,9 @@ namespace Oni.Totoro
 			}
 			Console.WriteLine("Importing {0}", text);
 			daeReader = new AnimationDaeReader();
-			daeReader.Scene = Reader.ReadFile(text);
+			daeReader.Scene = Reader.ReadFile(text, false);
+			daeReader.StartFrame = int.MinValue;
+			daeReader.EndFrame = int.MaxValue;
 			if (!flag)
 			{
 				if (xml.IsStartElement("Start"))
@@ -393,6 +394,13 @@ namespace Oni.Totoro
 					daeReader.EndFrame = xml.ReadElementContentAsInt("End", "");
 				}
 				xml.ReadEndElement();
+			}
+			if (daeReader.StartFrame > daeReader.EndFrame)
+			{
+				int startFrame = daeReader.StartFrame;
+				daeReader.StartFrame = daeReader.EndFrame;
+				daeReader.EndFrame = startFrame;
+				Console.Error.WriteLine("Warning: Start and End frames were in the wrong order; setting range to ({0} - {1})", daeReader.StartFrame, daeReader.EndFrame);
 			}
 		}
 	}

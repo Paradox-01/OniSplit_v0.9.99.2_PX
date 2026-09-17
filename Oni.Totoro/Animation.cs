@@ -63,6 +63,8 @@ namespace Oni.Totoro
 
 		public readonly List<List<KeyFrame>> Rotations = new List<List<KeyFrame>>();
 
+		public readonly List<List<KeyFrame>> RotationsDense = new List<List<KeyFrame>>();
+
 		public readonly List<Shortcut> Shortcuts = new List<Shortcut>();
 
 		public readonly List<Position> Positions = new List<Position>();
@@ -89,27 +91,42 @@ namespace Oni.Totoro
 		{
 			TextWriter error = Console.Error;
 			int frameCount = Heights.Count;
-			foreach (Sound item in Sounds.FindAll((Sound s) => s.Start >= frameCount))
+			foreach (Sound item in Sounds.FindAll(delegate(Sound s)
+			{
+				return s.Start >= frameCount;
+			}))
 			{
 				error.WriteLine("Warning: sound start {0} is beyond the last animation frame", item.Start);
 				Sounds.Remove(item);
 			}
-			foreach (Footstep item2 in Footsteps.FindAll((Footstep f) => f.Frame >= frameCount))
+			foreach (Footstep item2 in Footsteps.FindAll(delegate(Footstep f)
+			{
+				return f.Frame >= frameCount;
+			}))
 			{
 				error.WriteLine("Warning: footstep frame {0} is beyond the last animation frame", item2.Frame);
 				Footsteps.Remove(item2);
 			}
-			foreach (Damage item3 in SelfDamage.FindAll((Damage d) => d.Frame > frameCount))
+			foreach (Damage item3 in SelfDamage.FindAll(delegate(Damage d)
+			{
+				return d.Frame > frameCount;
+			}))
 			{
 				error.WriteLine("Warning: damage frame {0} is beyond the last animation frame", item3.Frame);
 				SelfDamage.Remove(item3);
 			}
-			foreach (Attack item4 in Attacks.FindAll((Attack a) => a.Start >= frameCount))
+			foreach (Attack item4 in Attacks.FindAll(delegate(Attack a)
+			{
+				return a.Start >= frameCount;
+			}))
 			{
 				error.WriteLine("Warning: attack start frame {0} is beyond the last animation frame", item4.Start);
 				Attacks.Remove(item4);
 			}
-			foreach (Particle item5 in Particles.FindAll((Particle p) => p.Start >= frameCount))
+			foreach (Particle item5 in Particles.FindAll(delegate(Particle p)
+			{
+				return p.Start >= frameCount;
+			}))
 			{
 				error.WriteLine("Warning: particle start frame {0} is beyond the last animation frame", item5.Start);
 				Particles.Remove(item5);
@@ -121,11 +138,11 @@ namespace Oni.Totoro
 			Positions.Clear();
 			AllPoints.Clear();
 			int count = Heights.Count;
-			int count2 = Rotations.Count;
+			int count2 = RotationsDense.Count;
 			Quaternion[,] array = new Quaternion[count, count2];
 			for (int i = 0; i < count2; i++)
 			{
-				List<KeyFrame> list = Rotations[i];
+				List<KeyFrame> list = RotationsDense[i];
 				for (int j = 0; j < list.Count; j++)
 				{
 					array[j, i] = new Quaternion(list[j].Rotation);
@@ -159,13 +176,13 @@ namespace Oni.Totoro
 					num2 = Math.Max(num2, vector.Y + boundingSphere.Radius);
 					list2.AddRange(collection);
 				}
-				Positions.Add(new Position
-				{
-					Height = num2 - num,
-					YOffset = num,
-					X = zero.X,
-					Z = zero.Y
-				});
+				List<Position> positions = Positions;
+				Position position = new Position();
+				position.Height = num2 - num;
+				position.YOffset = num;
+				position.X = zero.X;
+				position.Z = zero.Y;
+				positions.Add(position);
 				AllPoints.Add(list2);
 				zero += Velocities[k];
 			}
@@ -185,11 +202,11 @@ namespace Oni.Totoro
 			ObjectAnimation[] array = new ObjectAnimation[body.Nodes.Count];
 			foreach (BodyNode node in body.Nodes)
 			{
-				array[node.Index] = new ObjectAnimation
-				{
-					Name = Name + "_" + node.Name,
-					Length = Heights.Count
-				};
+				int index = node.Index;
+				ObjectAnimation objectAnimation = new ObjectAnimation();
+				objectAnimation.Name = Name + "_" + node.Name;
+				objectAnimation.Length = Heights.Count;
+				array[index] = objectAnimation;
 			}
 			FillObjectAnimationFrames(array, body.Root, null);
 			return array;
@@ -200,11 +217,11 @@ namespace Oni.Totoro
 			ObjectAnimationKey[] array = new ObjectAnimationKey[Velocities.Count];
 			for (int i = 0; i < array.Length; i++)
 			{
-				array[i] = new ObjectAnimationKey
-				{
-					Time = i,
-					Scale = Vector3.One
-				};
+				int num = i;
+				ObjectAnimationKey objectAnimationKey = new ObjectAnimationKey();
+				objectAnimationKey.Time = i;
+				objectAnimationKey.Scale = Vector3.One;
+				array[num] = objectAnimationKey;
 			}
 			List<KeyFrame> list = Rotations[node.Index];
 			Quaternion[] array2 = new Quaternion[list.Count];
@@ -221,7 +238,7 @@ namespace Oni.Totoro
 					array2[j] = new Quaternion(keyFrame.Rotation);
 				}
 			}
-			int num = 0;
+			int num2 = 0;
 			for (int k = 0; k < list.Count; k++)
 			{
 				int duration = list[k].Duration;
@@ -229,7 +246,7 @@ namespace Oni.Totoro
 				Quaternion q2 = ((k == list.Count - 1) ? array2[k] : array2[k + 1]);
 				for (int l = 0; l < duration; l++)
 				{
-					array[num++].Rotation = Quaternion.Lerp(q, q2, (float)l / (float)duration);
+					array[num2++].Rotation = Quaternion.Slerp(q, q2, (float)l / (float)duration, true);
 				}
 			}
 			if (parentNode == null)
@@ -247,10 +264,10 @@ namespace Oni.Totoro
 					array[n].Translation = node.Translation;
 				}
 				ObjectAnimationKey[] keys = anims[parentNode.Index].Keys;
-				for (int num2 = 0; num2 < array.Length; num2++)
+				for (int num3 = 0; num3 < array.Length; num3++)
 				{
-					array[num2].Rotation = keys[num2].Rotation * array[num2].Rotation;
-					array[num2].Translation = keys[num2].Translation + Vector3.Transform(array[num2].Translation, keys[num2].Rotation);
+					array[num3].Rotation = keys[num3].Rotation * array[num3].Rotation;
+					array[num3].Translation = keys[num3].Translation + Vector3.Transform(array[num3].Translation, keys[num3].Rotation);
 				}
 			}
 			anims[node.Index].Keys = array;

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Oni.Akira;
 using Oni.Dae;
+using Oni.Dae.IO;
 using Oni.Game;
 using Oni.Motoko;
 using Oni.Physics;
@@ -13,6 +14,8 @@ namespace Oni
 	internal class DaeExporter : Exporter
 	{
 		private readonly bool noAnimation;
+
+		private readonly bool useFullName;
 
 		private readonly List<string> animationNames = new List<string>();
 
@@ -35,6 +38,10 @@ namespace Oni
 				if (text == "-noanim")
 				{
 					noAnimation = true;
+				}
+				else if (text == "-fullname")
+				{
+					useFullName = true;
 				}
 				else if (text.StartsWith("-anim:", StringComparison.Ordinal))
 				{
@@ -78,14 +85,15 @@ namespace Oni
 		protected override void ExportInstance(InstanceDescriptor descriptor)
 		{
 			TemplateTag tag = descriptor.Template.Tag;
+			string outputName = useFullName ? descriptor.FullName : descriptor.Name;
 			if (tag == TemplateTag.AKEV)
 			{
 				PolygonMesh mesh = AkiraDatReader.Read(descriptor, getVanillaStairs);
-				AkiraDaeWriter.Write(mesh, descriptor.Name, base.OutputDirPath, fileType);
+				AkiraDaeWriter.Write(mesh, outputName, base.OutputDirPath, fileType);
 				// Keep the -getAgqgPerPolygon output isolated from the legacy AKEV exports.
 				if (getAgqgPerPolygon)
 				{
-					AkiraAgqgDaeWriter.Write(mesh, descriptor.Name, base.OutputDirPath);
+					AkiraAgqgDaeWriter.Write(mesh, outputName, base.OutputDirPath);
 				}
 				return;
 			}
@@ -117,7 +125,7 @@ namespace Oni
 			}
 			if (scene.Nodes.Count > 0)
 			{
-				string filePath = Path.Combine(base.OutputDirPath, descriptor.Name + "." + fileType);
+				string filePath = Path.Combine(base.OutputDirPath, outputName + "." + fileType);
 				Writer.WriteFile(filePath, scene);
 			}
 		}
@@ -214,7 +222,9 @@ namespace Oni
 			if (instanceDescriptor != null)
 			{
 				Animation animation = AnimationDatReader.Read(instanceDescriptor);
-				AnimationDaeWriter.Write(node, animation);
+				bool blender = DaeReader.CommandLineArgs.Any((string arg) => arg == "-blender");
+				bool dense = DaeReader.CommandLineArgs.Any((string arg) => arg == "-dense");
+				AnimationDaeWriter.Write(node, animation, 0, blender, blender, dense);
 			}
 		}
 

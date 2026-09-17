@@ -22,38 +22,40 @@ namespace Oni.Dae
 		{
 			get
 			{
-				Input input = inputs.Find((Input i) => i.Semantic == Semantic.Input);
+				Input input = inputs.Find(delegate(Input i)
+				{
+					return i.Semantic == Semantic.Input;
+				});
 				if (input == null)
 				{
 					return 0;
 				}
-				return FMath.RoundToInt32(input.Source.FloatData.Last() * 60f) + 1;
+				return FMath.RoundToInt32(Utils.Last(input.Source.FloatData) * 60f) + 1;
 			}
 		}
 
 		public Sampler Scale(float scale)
 		{
-			Sampler sampler = new Sampler
-			{
-				outputScale = scale
-			};
-			sampler.inputs.AddRange(inputs);
-			return sampler;
+			Sampler sampler = new Sampler();
+			sampler.outputScale = scale;
+			Sampler sampler2 = sampler;
+			sampler2.inputs.AddRange(inputs);
+			return sampler2;
 		}
 
 		public Sampler Split(int offset)
 		{
 			Sampler sampler = new Sampler();
-			foreach (Input input in inputs)
+			foreach (Input input3 in inputs)
 			{
-				Source source = input.Source;
-				switch (input.Semantic)
+				Source source = input3.Source;
+				switch (input3.Semantic)
 				{
 				case Semantic.Input:
-					sampler.inputs.Add(input);
+					sampler.inputs.Add(input3);
 					break;
 				case Semantic.Interpolation:
-					sampler.inputs.Add(input);
+					sampler.inputs.Add(input3);
 					break;
 				case Semantic.Output:
 				{
@@ -62,11 +64,11 @@ namespace Oni.Dae
 					{
 						array2[j] = source.FloatData[j * source.Stride + offset];
 					}
-					sampler.inputs.Add(new Input
-					{
-						Source = new Source(array2, 1),
-						Semantic = input.Semantic
-					});
+					List<Input> list2 = sampler.inputs;
+					Input input2 = new Input();
+					input2.Source = new Source(array2, 1);
+					input2.Semantic = input3.Semantic;
+					list2.Add(input2);
 					break;
 				}
 				case Semantic.InTangent:
@@ -78,11 +80,11 @@ namespace Oni.Dae
 						array[i] = source.FloatData[i * source.Stride];
 						array[i + 1] = source.FloatData[i * source.Stride + (offset + 1)];
 					}
-					sampler.inputs.Add(new Input
-					{
-						Source = new Source(array, 2),
-						Semantic = input.Semantic
-					});
+					List<Input> list = sampler.inputs;
+					Input input = new Input();
+					input.Source = new Source(array, 2);
+					input.Semantic = input3.Semantic;
+					list.Add(input);
 					break;
 				}
 				}
@@ -106,6 +108,40 @@ namespace Oni.Dae
 				}
 			}
 			return array;
+		}
+
+		public float[] SampleInput()
+		{
+			float[] result = null;
+			foreach (Input input in inputs)
+			{
+				Semantic semantic = input.Semantic;
+				if (semantic == Semantic.Input)
+				{
+					result = input.Source.FloatData;
+				}
+			}
+			return result;
+		}
+
+		public float[] SampleOutput()
+		{
+			float[] result = null;
+			int num = 1;
+			foreach (Input input in inputs)
+			{
+				Semantic semantic = input.Semantic;
+				if (semantic == Semantic.Output)
+				{
+					result = input.Source.FloatData;
+					num = input.Source.Stride;
+				}
+			}
+			if (num != 1)
+			{
+				throw new InvalidDataException("Unexpected output stride " + num);
+			}
+			return result;
 		}
 
 		private float[] Sample(int start, int end, int offset)
@@ -155,9 +191,9 @@ namespace Oni.Dae
 				}
 				return array6;
 			}
-			float num2 = array.First();
+			float num2 = Utils.First(array);
 			float num3 = array2[offset];
-			float num4 = array.Last();
+			float num4 = Utils.Last(array);
 			float num5 = array2[array2.Length - num + offset];
 			for (int j = 0; j < array6.Length; j++)
 			{

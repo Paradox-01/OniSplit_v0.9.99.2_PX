@@ -509,6 +509,7 @@ namespace Oni.Dae.IO
 		private void WriteEffectTechnique(Effect effect)
 		{
 			xml.WriteStartElement("technique");
+			xml.WriteAttributeString("sid", "common");
 			xml.WriteStartElement("phong");
 			WriteEffectTechniqueProperty("ambient", effect.Ambient);
 			WriteEffectTechniqueProperty("diffuse", effect.Diffuse);

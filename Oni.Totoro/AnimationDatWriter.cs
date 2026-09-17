@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Oni.Totoro
 {
@@ -70,14 +71,13 @@ namespace Oni.Totoro
 
 		public static void Write(Animation animation, Importer importer, BinaryWriter dat)
 		{
-			AnimationDatWriter animationDatWriter = new AnimationDatWriter
-			{
-				animation = animation,
-				importer = importer,
-				dat = dat,
-				raw = importer.RawWriter
-			};
-			animationDatWriter.WriteAnimation();
+			AnimationDatWriter animationDatWriter = new AnimationDatWriter();
+			animationDatWriter.animation = animation;
+			animationDatWriter.importer = importer;
+			animationDatWriter.dat = dat;
+			animationDatWriter.raw = importer.RawWriter;
+			AnimationDatWriter animationDatWriter2 = animationDatWriter;
+			animationDatWriter2.WriteAnimation();
 		}
 
 		private void WriteAnimation()
@@ -188,7 +188,13 @@ namespace Oni.Totoro
 			array[0] = (ushort)(rotations.Count * 2);
 			for (int i = 1; i < array.Length; i++)
 			{
-				array[i] = (ushort)(array[i - 1] + rotations[i - 1].Count * (frameSize + 1) - 1);
+				int num = array[i - 1];
+				num += rotations[i - 1].Count * (frameSize + 1) - 1;
+				if (num > 65535)
+				{
+					throw new InvalidDataException("Rotation data is too large for 16-bit indexing (bone " + i + " and above do not fit). Try -tolerance:0.1, -tolerance:0.2, etc.");
+				}
+				array[i] = (ushort)num;
 			}
 			raw.Write(array);
 			foreach (List<KeyFrame> rotation in rotations)
@@ -206,7 +212,7 @@ namespace Oni.Totoro
 						raw.Write(new Quaternion(item.Rotation));
 						break;
 					}
-					if (item != rotation.Last())
+					if (item != Utils.Last(rotation))
 					{
 						raw.WriteByte(item.Duration);
 					}
@@ -429,13 +435,13 @@ namespace Oni.Totoro
 					{
 						num6 += 6.283186f;
 					}
-					attack.Extents.Add(new AttackExtent
-					{
-						Angle = MathHelper.ToDegrees(num6),
-						Length = num5,
-						MinY = num3,
-						MaxY = num4
-					});
+					List<AttackExtent> list2 = attack.Extents;
+					AttackExtent attackExtent = new AttackExtent();
+					attackExtent.Angle = MathHelper.ToDegrees(num6);
+					attackExtent.Length = num5;
+					attackExtent.MinY = num3;
+					attackExtent.MaxY = num4;
+					list2.Add(attackExtent);
 				}
 			}
 		}
@@ -477,7 +483,7 @@ namespace Oni.Totoro
 					break;
 				}
 			}
-			extentInfo.MaxDistance = animation.AttackRing.Max();
+			extentInfo.MaxDistance = Enumerable.Max(animation.AttackRing);
 			extentInfo.MinY = num;
 			extentInfo.MaxY = num2;
 			extentInfo.FirstExtent.Frame = datExtent.Frame;
@@ -507,58 +513,25 @@ namespace Oni.Totoro
 
 		private List<List<KeyFrame>> CompressFrames(List<List<KeyFrame>> tracks)
 		{
-			float degrees = 0.5f;
-			float tolerance = FMath.Cos(MathHelper.ToRadians(degrees) * 0.5f);
 			List<List<KeyFrame>> list = new List<List<KeyFrame>>();
 			foreach (List<KeyFrame> track in tracks)
 			{
 				List<KeyFrame> list2 = new List<KeyFrame>(track.Count);
-				int num;
-				for (int i = 0; i < track.Count; i += num)
+				for (int i = 0; i < track.Count; i++)
 				{
 					KeyFrame keyFrame = track[i];
-					num = keyFrame.Duration;
-					Quaternion quaternion = new Quaternion(keyFrame.Rotation);
-					if (num == 1)
-					{
-						for (int j = i + 2; j < track.Count && IsLinearRange(track, i, j, tolerance); j++)
-						{
-							num = j - i;
-						}
-					}
-					Vector3 vector = quaternion.ToEulerXYZ();
-					list2.Add(new KeyFrame
-					{
-						Duration = num,
-						Rotation = 
-						{
-							X = vector.X,
-							Y = vector.Y,
-							Z = vector.Z
-						}
-					});
+					int duration = keyFrame.Duration;
+					Vector3 vector = new Quaternion(keyFrame.Rotation).ToEulerXYZ();
+					KeyFrame keyFrame2 = new KeyFrame();
+					keyFrame2.Duration = duration;
+					keyFrame2.Rotation.X = vector.X;
+					keyFrame2.Rotation.Y = vector.Y;
+					keyFrame2.Rotation.Z = vector.Z;
+					list2.Add(keyFrame2);
 				}
 				list.Add(list2);
 			}
 			return list;
-		}
-
-		private static bool IsLinearRange(List<KeyFrame> frames, int first, int last, float tolerance)
-		{
-			Quaternion q = new Quaternion(frames[first].Rotation);
-			Quaternion q2 = new Quaternion(frames[last].Rotation);
-			float num = last - first;
-			for (int i = first + 1; i < last; i++)
-			{
-				float amount = (float)(i - first) / num;
-				Quaternion q3 = Quaternion.Lerp(q, q2, amount);
-				Quaternion quaternion = new Quaternion(frames[i].Rotation);
-				if (Math.Abs((Quaternion.Conjugate(q3) * quaternion).W) < tolerance)
-				{
-					return false;
-				}
-			}
-			return true;
 		}
 	}
 }
