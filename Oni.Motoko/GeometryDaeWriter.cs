@@ -29,7 +29,17 @@ namespace Oni.Motoko
 			if (geometry.Texture != null)
 			{
 				Material material = textureWriter.WriteMaterial(geometry.Texture);
-				geometryInstance.Materials.Add(new MaterialInstance("default", material)
+				// The DAE writer assigns the material's XML id from its Name, and
+				// several importers (e.g. Blender simple COLLADA importers) only resolve
+				// a primitive's material when the bind symbol equals that id. Emitting
+				// the generic "default" symbol leaves these imports untextured; use the
+				// material name as symbol instead, like AkiraDaeWriter does.
+				string symbol = (!string.IsNullOrEmpty(material.Name)) ? material.Name : "default";
+				foreach (MeshPrimitives primitive in geometry2.Primitives)
+				{
+					primitive.MaterialSymbol = symbol;
+				}
+				geometryInstance.Materials.Add(new MaterialInstance(symbol, material)
 				{
 					Bindings = 
 					{
