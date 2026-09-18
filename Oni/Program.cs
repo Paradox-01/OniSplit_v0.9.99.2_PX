@@ -6,6 +6,7 @@ using Oni.Akira;
 using Oni.Collections;
 using Oni.Dae;
 using Oni.Dae.IO;
+using Oni.Game;
 using Oni.Level;
 using Oni.Metadata;
 using Oni.Motoko;
@@ -184,13 +185,13 @@ namespace Oni
 			Console.WriteLine("\t-extract:txt <directory>\tExtracts all subtitles (SUBT) from a Oni .dat/.oni file in TXT format");
 			Console.WriteLine("\t-extract:obj <directory>\tExtracts all M3GM and ONCC instances to Wavefront OBJ files");
 			Console.WriteLine("\t-extract:dae <directory>\tExtracts M3GM, ONCC, TRBS, and AKEV instances to Collada files");
-			Console.WriteLine("\t\t[-fullname] [-blender] [-dense] [-noanim]");
+			Console.WriteLine("\t\t[-fullname] [-blender] [-dense] [-noanim] [-alltextures|-envmapFix]");
 			Console.WriteLine("\t\t<AKEV input> [-getVanillaStairs]\tRecover implicit vanilla stair ramps from AKEV input");
 			Console.WriteLine("\t\t<AKEV*.oni> [-getAgqgPerPolygon]\tWildcards resolve to the actual AKEV filenames");
 			Console.WriteLine("\t\t\tAlso export original materials and per-polygon AGQG metadata");
 			Console.WriteLine("\t\t\t[-getLevelWithAgqgFlagsPerPolygon] is an alias for -getAgqgPerPolygon");
 			Console.WriteLine("\t-extract:xml <directory>\tExtracts all instances to XML files");
-			Console.WriteLine("\t\t[-anim-body:<TRBS file>] [-blender] [-dense]");
+			Console.WriteLine("\t\t[-anim-body:<TRBS or ONCC file>] [-anim-merge] [-blender] [-dense] [-alltextures|-envmapFix]");
 			Console.WriteLine();
 			Console.WriteLine("\t-create:txmp <directory> [-nomipmaps] [-nouwrap] [-novwrap] [-format:bgr|rgba|bgr555|bgra5551|bgra4444|dxt1] [-envmap:texture_name] [-large] image_file");
 			Console.WriteLine("\t-create:m3gm <directory> [-tex:texture_name] obj_file");
@@ -403,18 +404,34 @@ namespace Oni
 			}
 			string fullPath = Path.GetFullPath(args[1]);
 			List<string> fileList = GetFileList(args, 2);
+			bool allTextures = args.Any((string a) => string.Equals(a, "-alltextures", StringComparison.OrdinalIgnoreCase) || string.Equals(a, "-envmapFix", StringComparison.OrdinalIgnoreCase));
 			XmlExporter xmlExporter = new XmlExporter(fileManager, fullPath)
 			{
 				Recursive = args.Any((string a) => a == "-recurse"),
 				MergeAnimations = args.Any((string a) => a == "-anim-merge"),
-				NoAnimation = args.Any((string a) => a == "-noanim")
+				NoAnimation = args.Any((string a) => a == "-noanim"),
+				AllTextures = allTextures
 			};
 			string text = args.FirstOrDefault((string a) => a.StartsWith("-anim-body:", StringComparison.Ordinal));
 			if (text != null)
 			{
 				text = Path.GetFullPath(text.Substring("-anim-body:".Length));
 				InstanceFile instanceFile = fileManager.OpenFile(text);
-				xmlExporter.AnimationBody = BodyDatReader.Read(instanceFile.Descriptors[0]);
+				InstanceDescriptor bodyDescriptor = instanceFile.Descriptors[0];
+				if (bodyDescriptor.Template.Tag == TemplateTag.ONCC)
+				{
+					CharacterClass characterClass = CharacterClass.Read(bodyDescriptor);
+					xmlExporter.AnimationBody = BodyDatReader.Read(characterClass.Body);
+					xmlExporter.AnimationTextures = characterClass.Textures;
+				}
+				else if (bodyDescriptor.Template.Tag == TemplateTag.TRBS)
+				{
+					xmlExporter.AnimationBody = BodyDatReader.Read(bodyDescriptor);
+				}
+				else
+				{
+					throw new ArgumentException("-anim-body requires a TRBS or ONCC input file.");
+				}
 			}
 			xmlExporter.ExportFiles(fileList);
 			return 0;

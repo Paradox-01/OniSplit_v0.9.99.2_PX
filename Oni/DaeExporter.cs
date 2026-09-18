@@ -28,11 +28,17 @@ namespace Oni
 		// Enables the additional DAE produced by -getAgqgPerPolygon.
 		private readonly bool getAgqgPerPolygon;
 
+		private readonly bool allTextures;
+
 		public DaeExporter(string[] args, InstanceFileManager fileManager, string outputDirPath, string fileType, bool getVanillaStairs, bool getAgqgPerPolygon)
 			: base(fileManager, outputDirPath)
 		{
 			this.getVanillaStairs = getVanillaStairs;
 			this.getAgqgPerPolygon = getAgqgPerPolygon;
+			allTextures = Array.Exists(args, delegate(string arg)
+			{
+				return string.Equals(arg, "-alltextures", StringComparison.OrdinalIgnoreCase) || string.Equals(arg, "-envmapFix", StringComparison.OrdinalIgnoreCase);
+			});
 			foreach (string text in args)
 			{
 				if (text == "-noanim")
@@ -99,7 +105,7 @@ namespace Oni
 			}
 			Scene scene = new Scene();
 			scene.Name = descriptor.Name;
-			TextureDaeWriter textureWriter = new TextureDaeWriter(base.OutputDirPath);
+			TextureDaeWriter textureWriter = new TextureDaeWriter(base.OutputDirPath, allTextures);
 			GeometryDaeWriter geometryWriter = new GeometryDaeWriter(textureWriter);
 			BodyDaeWriter bodyWriter = new BodyDaeWriter(geometryWriter);
 			switch (tag)
@@ -127,6 +133,17 @@ namespace Oni
 			{
 				string filePath = Path.Combine(base.OutputDirPath, outputName + "." + fileType);
 				Writer.WriteFile(filePath, scene);
+			}
+			if (allTextures)
+			{
+				if (textureWriter.EnvMapCount == 0)
+				{
+					Console.WriteLine("Env maps found: none ({0})", outputName);
+				}
+				else
+				{
+					Console.WriteLine("Env maps found: {0} unique map(s) used by {1} material(s) ({2})", textureWriter.EnvMapCount, textureWriter.EnvMapMaterialCount, outputName);
+				}
 			}
 		}
 

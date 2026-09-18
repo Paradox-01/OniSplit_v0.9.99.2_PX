@@ -27,6 +27,22 @@ namespace Oni.Motoko
 			}
 		}
 
+		public static InstanceDescriptor ReadEnvMap(InstanceDescriptor txmp)
+		{
+			using (BinaryReader binaryReader = txmp.OpenRead(128))
+			{
+				binaryReader.Skip(12);
+				binaryReader.ReadInstance();
+				InstanceDescriptor envMap = binaryReader.ReadInstance();
+				if (envMap == null || !envMap.IsPlaceholder)
+				{
+					return envMap;
+				}
+				InstanceFile file = txmp.File.FileManager.FindInstance(envMap.FullName, txmp.File);
+				return file == null ? null : file.Descriptors[0];
+			}
+		}
+
 		public static Texture Read(InstanceDescriptor txmp)
 		{
 			Texture texture = new Texture

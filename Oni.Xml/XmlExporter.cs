@@ -6,6 +6,7 @@ using System.Xml;
 using Oni.Collections;
 using Oni.Dae;
 using Oni.Dae.IO;
+using Oni.Game;
 using Oni.Metadata;
 using Oni.Motoko;
 using Oni.Sound;
@@ -28,6 +29,12 @@ namespace Oni.Xml
 		private Animation mergedAnim;
 
 		private string animDaeFileName;
+
+		private bool allTextures;
+
+		private InstanceDescriptor[] animTextures;
+
+		private TextureDaeWriter animTextureWriter;
 
 		private readonly Dictionary<InstanceDescriptor, string> externalChildren = new Dictionary<InstanceDescriptor, string>();
 
@@ -90,6 +97,18 @@ namespace Oni.Xml
 			}
 		}
 
+		public bool AllTextures
+		{
+			get { return allTextures; }
+			set { allTextures = value; }
+		}
+
+		public InstanceDescriptor[] AnimationTextures
+		{
+			get { return animTextures; }
+			set { animTextures = value; }
+		}
+
 		public XmlExporter(InstanceFileManager fileManager, string outputDirPath)
 			: base(fileManager, outputDirPath)
 		{
@@ -103,7 +122,9 @@ namespace Oni.Xml
 			baseFileName = Path.GetFileNameWithoutExtension(text);
 			if (recursive && animBody == null && descriptor.Template.Tag == TemplateTag.ONCC)
 			{
-				animBody = BodyDatReader.Read(descriptor);
+				CharacterClass characterClass = CharacterClass.Read(descriptor);
+				animBody = BodyDatReader.Read(characterClass.Body);
+				animTextures = characterClass.Textures;
 			}
 			using (xml = CreateXmlWriter(text))
 			{
@@ -162,7 +183,9 @@ namespace Oni.Xml
 				{
 					recursive = recursive,
 					animBody = animBody,
-					mergeAnimations = mergeAnimations
+					mergeAnimations = mergeAnimations,
+					allTextures = allTextures,
+					animTextures = animTextures
 				};
 				xmlExporter.ExportFiles(new string[1] { instanceFile2.FilePath });
 				value = Path.GetFileName(CreateFileName(descriptor, ".xml"));
@@ -238,10 +261,11 @@ namespace Oni.Xml
 			}
 			if (animBodyNode == null)
 			{
-				TextureDaeWriter textureWriter = new TextureDaeWriter(base.OutputDirPath);
-				GeometryDaeWriter geometryWriter = new GeometryDaeWriter(textureWriter);
+				animTextureWriter = new TextureDaeWriter(base.OutputDirPath, allTextures);
+				GeometryDaeWriter geometryWriter = new GeometryDaeWriter(animTextureWriter);
 				BodyDaeWriter bodyDaeWriter = new BodyDaeWriter(geometryWriter);
-				animBodyNode = bodyDaeWriter.Write(animBody, false, null);
+				animBodyNode = bodyDaeWriter.Write(animBody, false, animTextures);
+				ReportEnvMaps(baseFileName, animTextureWriter);
 			}
 			if (mergeAnimations)
 			{
@@ -290,13 +314,29 @@ namespace Oni.Xml
 			}
 		}
 
+		private void ReportEnvMaps(string outputName, TextureDaeWriter textureWriter)
+		{
+			if (!allTextures)
+			{
+				return;
+			}
+			if (textureWriter.EnvMapCount == 0)
+			{
+				Console.WriteLine("Env maps found: none ({0})", outputName);
+			}
+			else
+			{
+				Console.WriteLine("Env maps found: {0} unique map(s) used by {1} material(s) ({2})", textureWriter.EnvMapCount, textureWriter.EnvMapMaterialCount, outputName);
+			}
+		}
+
 		private string WriteBody(InstanceDescriptor descriptor)
 		{
 			string value;
 			if (!externalChildren.TryGetValue(descriptor, out value))
 			{
 				Body body = BodyDatReader.Read(descriptor);
-				TextureDaeWriter textureWriter = new TextureDaeWriter(base.OutputDirPath);
+				TextureDaeWriter textureWriter = new TextureDaeWriter(base.OutputDirPath, allTextures);
 				GeometryDaeWriter geometryWriter = new GeometryDaeWriter(textureWriter);
 				BodyDaeWriter bodyDaeWriter = new BodyDaeWriter(geometryWriter);
 				Node item = bodyDaeWriter.Write(body, noAnimation, null);
@@ -316,7 +356,7 @@ namespace Oni.Xml
 			if (!externalChildren.TryGetValue(descriptor, out value))
 			{
 				Oni.Motoko.Geometry geometry = GeometryDatReader.Read(descriptor);
-				TextureDaeWriter textureWriter = new TextureDaeWriter(base.OutputDirPath);
+				TextureDaeWriter textureWriter = new TextureDaeWriter(base.OutputDirPath, allTextures);
 				GeometryDaeWriter geometryDaeWriter = new GeometryDaeWriter(textureWriter);
 				value = ((!descriptor.HasName) ? string.Format("{0}_{1}.dae", mainDescriptor.Name, descriptor.Index) : (descriptor.FullName + ".dae"));
 				Node item = geometryDaeWriter.WriteNode(geometry, geometry.Name);

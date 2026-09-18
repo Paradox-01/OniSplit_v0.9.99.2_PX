@@ -103,12 +103,12 @@ namespace Oni.Game
 						}
 					}
 				}
+				}
 				if (!string.IsNullOrEmpty(animationName) && characterClass.Animation == null)
 				{
-					Console.Error.WriteLine("Animation {0} was not found", animationName);
+					throw new InvalidOperationException(string.Format("Animation {0} was not found", animationName));
 				}
-			}
-			return characterClass;
+				return characterClass;
 		}
 	}
 }

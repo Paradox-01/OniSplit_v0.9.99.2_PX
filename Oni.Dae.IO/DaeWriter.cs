@@ -514,6 +514,10 @@ namespace Oni.Dae.IO
 			WriteEffectTechniqueProperty("ambient", effect.Ambient);
 			WriteEffectTechniqueProperty("diffuse", effect.Diffuse);
 			WriteEffectTechniqueProperty("specular", effect.Specular);
+			if (effect.Reflective.Value is EffectTexture)
+			{
+				WriteEffectTechniqueProperty("reflective", effect.Reflective);
+			}
 			WriteEffectTechniqueProperty("transparent", effect.Transparent);
 			xml.WriteEndElement();
 			xml.WriteEndElement();
