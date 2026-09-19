@@ -37,7 +37,7 @@ namespace Oni
 			this.getAgqgPerPolygon = getAgqgPerPolygon;
 			allTextures = Array.Exists(args, delegate(string arg)
 			{
-				return string.Equals(arg, "-alltextures", StringComparison.OrdinalIgnoreCase) || string.Equals(arg, "-envmapFix", StringComparison.OrdinalIgnoreCase);
+				return string.Equals(arg, "-envmapFix", StringComparison.OrdinalIgnoreCase);
 			});
 			foreach (string text in args)
 			{
